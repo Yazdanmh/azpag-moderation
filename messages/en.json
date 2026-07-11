@@ -1,0 +1,320 @@
+{
+    "form": {
+        "auth": {
+            "label": "Online marketplace in Afghanistan",
+            "login": {
+                "title": "Welcome Back",
+                "subtitle": "Sign in to your account to continue"
+            },
+            "forgot_password": {
+                "title": "Reset Password",
+                "subtitle": "Enter your email to receive a reset code"
+            },
+            "reset_password": {
+                "title": "Create New Password",
+                "subtitle": "Enter a new password to secure your account"
+            },
+            "action": {
+                "login": "Login",
+                "loading": "Loading...",
+                "forgot": "Forgot Password?",
+                "send": "Send Reset Code",
+                "back_to_login": "Back to Login",
+                "resend": "Resend",
+                "verify": "Verify",
+                "back": "Back",
+                "reset_password": "Reset Password",
+                "cancel": "Cancel"
+            },
+            "field": {
+                "email": {
+                    "label": "Email",
+                    "placeholder": "someone@example.com",
+                    "message": ""
+                },
+                "password": {
+                    "label": "Password",
+                    "placeholder": "********",
+                    "message": ""
+                },
+                "confirm_password": {
+                    "label": "Confirm Password",
+                    "placeholder": "********",
+                    "message": ""
+                },
+                "otp": {
+                    "label": "OTP Code",
+                    "placeholder": "000000",
+                    "message": ""
+                },
+                "privacyLink": "Privacy Policy"
+            },
+            "validation": {
+                "email": {
+                    "required": "Email is required.",
+                    "invalid": "Email must be a valid email address."
+                },
+                "password": {
+                    "required": "Password is required.",
+                    "min": "Password must be at least 8 characters long.",
+                    "uppercase": "Password must contain at least one uppercase letter.",
+                    "lowercase": "Password must contain at least one lowercase letter.",
+                    "number": "Password must contain at least one number.",
+                    "special": "Password must contain at least one special (!@#$%^&*) character.",
+                    "invalid": "Password contains unsafe or invalid content.",
+                    "mismatch": "Passwords do not match."
+                },
+                "confirm_password": {
+                    "required": "Confirm password is required.",
+                    "match": "Passwords do not match."
+                },
+                "otp": {
+                    "required": "OTP is required.",
+                    "invalid": "OTP must be 6 characters long."
+                }
+            },
+            "message": {
+                "login": {
+                    "success": {
+                        "title": "Welcome back!",
+                        "description": "You have successfully logged in."
+                    },
+                    "error": {
+                        "title": "Login Error",
+                        "description": "There was an issue while trying to log in. Please try again.",
+                        "deleted": {
+                            "title": "Account Inactive or Deleted",
+                            "description": "The account associated with {email} is currently disabled or has been deleted. To regain access, please request a verification code so your previous account can be restored if possible."
+                        },
+                        "invalid": {
+                            "title": "Invalid Input",
+                            "description": "Please provide valid information and try again."
+                        },
+                        "not_found": {
+                            "title": "Account Not Found",
+                            "description": "No account exists with the provided credentials."
+                        },
+                        "blocked": {
+                            "title": "Account Blocked",
+                            "description": "Your account has been blocked. If you believe this is a mistake, please contact support."
+                        },
+                        "unauthorized": {
+                            "title": "Incorrect Credentials",
+                            "description": "The username or password you entered is incorrect."
+                        },
+                        "google": {
+                            "title": "Use Google Account",
+                            "description": "Please log in using your Google account."
+                        },
+                        "tooManyRequests": {
+                            "title": "Too Many Requests",
+                            "description": "You have made too many requests. Please try again later."
+                        },
+                        "gone": {
+                            "title": "Account No Longer Available",
+                            "description": "The account you are trying to access is no longer available. Please contact support for assistance."
+                        }
+                    }
+                },
+                "forgot_password": {
+                    "success": {
+                        "title": "Reset Code Sent!",
+                        "description": "Check your email for the password reset code."
+                    },
+                    "error": {
+                        "title": "Error",
+                        "description": "An error occurred. Please try again.",
+                        "not_found": {
+                            "title": "Account Not Found",
+                            "description": "No account exists with this email address."
+                        },
+                        "invalid": {
+                            "title": "Invalid Input",
+                            "description": "Please provide a valid email address."
+                        },
+                        "tooManyRequests": {
+                            "title": "Too Many Requests",
+                            "description": "You have made too many requests. Please wait a moment before trying again."
+                        }
+                    },
+                    "check_email": "If this email exists in our system, you will receive a password reset code shortly.",
+                    "redirecting": "Redirecting to reset password page..."
+                },
+                "otp": {
+                    "title": "Verify OTP",
+                    "subtitle": "We've sent a code to",
+                    "resend_in": "Resend code in",
+                    "success": {
+                        "title": "OTP Verified!",
+                        "description": "Your OTP has been verified successfully."
+                    },
+                    "error": {
+                        "title": "Verification Failed",
+                        "description": "The OTP you entered is incorrect. Please try again.",
+                        "invalid": {
+                            "title": "Invalid OTP",
+                            "description": "The OTP you entered is invalid. Please try again."
+                        },
+                        "expired": {
+                            "title": "OTP Expired",
+                            "description": "The OTP has expired. Please request a new one."
+                        }
+                    },
+                    "resend": {
+                        "title": "Code Resent",
+                        "description": "A new OTP has been sent to your email."
+                    }
+                },
+                "reset_password": {
+                    "title": "Create New Password",
+                    "subtitle": "Enter a new password to secure your account",
+                    "success": {
+                        "title": "Password Reset Successfully!",
+                        "description": "Your password has been reset. You can now login with your new password."
+                    },
+                    "error": {
+                        "title": "Password Reset Failed",
+                        "description": "An error occurred while resetting your password. Please try again.",
+                        "invalid": {
+                            "title": "Invalid Input",
+                            "description": "Please provide a valid password and try again."
+                        }
+                    }
+                }
+            },
+            "footer": {
+                "rights": "@ {year} Azpag. All rights reserved"
+            }
+        },
+        "otp": {
+            "action": {
+                "loading": "Loading...",
+                "resend-again": "Resend after {timeout}s",
+                "resend": "Resend",
+                "verify": "Verify",
+                "sending": "Sending...",
+                "available_in": "Available in {timeout}sec",
+                "request": "Request"
+            },
+            "field": {
+                "pin": {
+                    "label": "Pin",
+                    "placeholder": "Enter 6 digit pin",
+                    "message": "Please enter received 6 digit pin. If you didn't receive the pin, click on resend."
+                }
+            },
+            "validation": {
+                "pin": {
+                    "required": "Pin is required.",
+                    "min": "Pin must be 6 characters long.",
+                    "max": "Pin must be 6 characters long."
+                }
+            },
+            "message": {
+                "success": {
+                    "title": "Pin sent!",
+                    "description": "You have successfully sent the pin to {email}."
+                },
+                "error": {
+                    "title": "Error!",
+                    "description": "An error occurred while sending the pin.",
+                    "not_found": {
+                        "title": "Account Not Found",
+                        "description": "The email {email} you are trying to verify does not exist."
+                    },
+                    "invalid": {
+                        "title": "Invalid Input",
+                        "description": "Please provide valid information and try again."
+                    },
+                    "blocked": {
+                        "title": "Account Blocked",
+                        "description": "Your account has been temporarily blocked. Please contact support for assistance."
+                    },
+                    "otp_too_soon": {
+                        "title": "Please Wait",
+                        "description": "A verification code was recently sent. Please wait a moment before requesting another OTP."
+                    },
+                    "unauthorized": {
+                        "title": "Unauthorized",
+                        "description": "You are not authorized to perform this action."
+                    },
+                    "expired": {
+                        "title": "OTP Expired",
+                        "description": "The one-time password (OTP) has expired. Please request a new code and try again."
+                    }
+                },
+                "resend": {
+                    "success": {
+                        "title": "Pin resent!",
+                        "description": "You have successfully resent the pin."
+                    },
+                    "error": {
+                        "title": "Error!",
+                        "description": "An error occurred while resending the pin."
+                    }
+                },
+                "verify": {
+                    "success": {
+                        "title": "Pin verified!",
+                        "description": "You have successfully verified the pin."
+                    },
+                    "error": {
+                        "title": "Error!",
+                        "description": "An error occurred while verifying the pin."
+                    }
+                }
+            }
+        }
+    },
+    "seo": {
+        "login": {
+            "title": "Login to your Account",
+            "description": "Sign in to your Azpag account."
+        },
+        "forgot_password": {
+            "title": "Forgot Password",
+            "description": "Reset your Azpag account password."
+        },
+        "reset_password": {
+            "title": "Reset Password",
+            "description": "Create a new password for your Azpag account."
+        }
+    },
+    "common": {
+        "profile": "Profile",
+        "settings": "Settings",
+        "logout": "Logout",
+        "dashboard": "Dashboard",
+        "reviews": "Reviews"
+    },
+    "sidebar": {
+        "welcome": "Welcome",
+        "dashboard": "Dashboard",
+        "reviews": "Reviews",
+        "posts": "Posts",
+        "settings": "Settings",
+        "help": "Get Help",
+        "search": "Search"
+    },
+    "errors": {
+        "access_denied": {
+            "title": "Access Denied",
+            "code": "403",
+            "description": "You do not have permission to access this resource. Your account role does not have the required permissions.",
+            "action": "Go to Your Dashboard"
+        },
+        "not_found": {
+            "title": "Page Not Found",
+            "code": "404",
+            "description": "The page you are looking for does not exist or has been moved. Please check the URL or return to the dashboard.",
+            "action": "Go Back"
+        },
+        "server_error": {
+            "title": "Something went wrong",
+            "code": "500",
+            "description": "An unexpected error occurred. We apologize for the inconvenience. Please try again later or contact support if the problem persists.",
+            "action": "Go to Your Dashboard",
+            "retry": "Try Again"
+        }
+    }
+}
