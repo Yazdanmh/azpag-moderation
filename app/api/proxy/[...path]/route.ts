@@ -9,14 +9,25 @@ async function handler(req: NextRequest, { params }: { params: Promise<{ path: s
   const backendUrl = new URL(`/api/${path.join('/')}`, BACKEND_URL);
   backendUrl.search = req.nextUrl.search;
 
-  const proxyReq = new Request(backendUrl, req);
+  const isStreaming = ['GET', 'HEAD'].includes(req.method);
+  const body = isStreaming ? undefined : await req.text();
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  const headers = new Headers(req.headers);
+  headers.set('Host', backendUrl.host);
+  headers.delete('content-length');
+  headers.delete('transfer-encoding');
+  headers.delete('connection');
   if (token?.access_token) {
-    proxyReq.headers.set('Authorization', `Bearer ${token.access_token}`);
+    headers.set('Authorization', `Bearer ${token.access_token}`);
   }
 
-  proxyReq.headers.delete('Host');
+  const proxyReq = new Request(backendUrl, {
+    method: req.method,
+    headers,
+    ...(isStreaming ? {} : { body: body || null }),
+  });
 
   try {
     return fetch(proxyReq);
