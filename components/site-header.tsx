@@ -16,7 +16,7 @@ export function SiteHeader() {
           className="mx-2 h-4 data-vertical:self-auto"
         />
         <h1 className="text-base font-medium">{t.moderation}</h1>
-        <div className="ms-auto"><LanguageSwitcher /></div>
+        <div className="ms-auto flex items-center"><LanguageSwitcher /></div>
       </div>
     </header>
   )

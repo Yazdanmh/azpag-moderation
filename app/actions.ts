@@ -4,6 +4,7 @@ import { createSession, deleteSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { dictionaries, isLocale } from "@/lib/i18n";
+import { apiFetch } from "@/lib/api";
 
 export type LoginState = {
   error?: {
@@ -138,20 +139,15 @@ export async function login(
     return loginError(t.loginErrorTitle, t.invalidInput);
   }
 
-  const authApiUrl =
-    process.env.AUTH_API_URL ?? "http://localhost:8000/api/auth/login";
-
   let response: Response;
 
   try {
-    response = await fetch(authApiUrl, {
+    response = await apiFetch("/api/auth/login", {
       method: "POST",
       headers: {
-        Accept: "application/json",
         "Content-Type": "application/json",
       },
       body: JSON.stringify(parsed.data),
-      cache: "no-store",
     });
   } catch {
     return loginError(t.loginErrorTitle, t.serviceUnavailable);
