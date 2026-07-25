@@ -4,6 +4,7 @@ export type Locale = (typeof locales)[number]
 export const dictionaries = {
   en: {
     language: "Language",
+    brandName: "Azpag",
     english: "English",
     persian: "فارسی",
     pashto: "پښتو",
@@ -13,7 +14,7 @@ export const dictionaries = {
     reviews: "Reviews",
     moderator: "Moderator",
     signOut: "Sign out",
-    loginTitle: "Azpag moderation",
+    loginTitle: "Afghanistan Online Marketplace",
     loginDescription: "Sign in with your authorized credentials",
     email: "Email",
     emailPlaceholder: "Enter your email address",
@@ -47,6 +48,7 @@ export const dictionaries = {
   },
   fa: {
     language: "زبان",
+    brandName: "ازپگ",
     english: "English",
     persian: "فارسی",
     pashto: "پښتو",
@@ -56,7 +58,7 @@ export const dictionaries = {
     reviews: "بررسی‌ها",
     moderator: "بررسی‌کننده",
     signOut: "خروج",
-    loginTitle: "مدیریت محتوای ازپگ",
+    loginTitle: "بازار آنلاین افغانستان",
     loginDescription: "با ایمیل و رمز عبور مجاز وارد شوید",
     email: "ایمیل",
     emailPlaceholder: "آدرس ایمیل خود را وارد کنید",
@@ -90,6 +92,7 @@ export const dictionaries = {
   },
   ps: {
     language: "ژبه",
+    brandName: "ازپگ",
     english: "English",
     persian: "فارسی",
     pashto: "پښتو",
@@ -99,7 +102,7 @@ export const dictionaries = {
     reviews: "بیاکتنې",
     moderator: "بیاکتونکی",
     signOut: "وتل",
-    loginTitle: "د ازپگ منځپانګې مدیریت",
+    loginTitle: "د افغانستان آنلاین بازار",
     loginDescription: "په خپل مجاز برېښنالیک او پټنوم سره ننوځئ",
     email: "برېښنالیک",
     emailPlaceholder: "خپل برېښنالیک پته دننه کړئ",

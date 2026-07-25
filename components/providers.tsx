@@ -28,7 +28,7 @@ export function Providers({
 
   function setLocale(value: Locale) {
     setLocaleState(value)
-    document.cookie = `azpag_locale=${value}; path=/; max-age=31536000; samesite=lax`
+    document.cookie = `azpag_locale=${value}; path=/; max-age=31536000; samesite=strict${location.protocol === "https:" ? "; secure" : ""}`
     document.documentElement.lang = value
     document.documentElement.dir = directionFor(value)
     router.refresh()

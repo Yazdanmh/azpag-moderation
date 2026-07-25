@@ -57,7 +57,7 @@ export function AppSidebar({
                 priority
               />
               <div className="grid flex-1 text-start text-sm leading-tight">
-                <span className="truncate font-semibold">Azpag</span>
+                <span className="truncate font-semibold">{t.brandName}</span>
                 <span className="truncate text-xs text-muted-foreground">{t.moderation}</span>
               </div>
             </SidebarMenuButton>

@@ -14,8 +14,8 @@ export type LoginState = {
 };
 
 const loginSchema = z.object({
-  email: z.email(),
-  password: z.string().min(1),
+  email: z.email().max(254),
+  password: z.string().min(1).max(128),
 });
 
 type LoginResponse = {
@@ -80,10 +80,9 @@ function getUserProfile(response: LoginResponse, fallbackEmail: string) {
     ("fullName" in user ? user.fullName : undefined) ??
     combinedName;
 
-  return {
-    email: user.email ?? fallbackEmail,
-    name: displayName || fallbackEmail,
-    image:
+  const email = (user.email ?? fallbackEmail).trim().slice(0, 254)
+  const name = (displayName || fallbackEmail).trim().slice(0, 160)
+  const rawImage =
       user.avatar ??
       ("avatar_url" in user ? user.avatar_url : undefined) ??
       user.image ??
@@ -91,8 +90,23 @@ function getUserProfile(response: LoginResponse, fallbackEmail: string) {
       user.profile_image ??
       ("profileImage" in user ? user.profileImage : undefined) ??
       ("photo" in user ? user.photo : undefined) ??
-      "",
-  };
+      ""
+  const image = sanitizeImageUrl(rawImage)
+
+  return { email, name, image };
+}
+
+function sanitizeImageUrl(value: string) {
+  const trimmed = value.trim().slice(0, 256)
+  if (!trimmed) return ""
+  if (trimmed.startsWith("/")) return trimmed
+
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : ""
+  } catch {
+    return ""
+  }
 }
 
 function getLoginError(
@@ -160,7 +174,7 @@ export async function login(
   }
 
   const accessToken = getAccessToken(body);
-  if (!accessToken) {
+  if (!accessToken || accessToken.length > 2048) {
     return loginError(t.loginErrorTitle, t.missingToken);
   }
 

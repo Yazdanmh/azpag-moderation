@@ -1,7 +1,20 @@
+import "server-only"
+
 const DEFAULT_BACKEND_URL = "http://localhost:8000"
 
 export function getBackendUrl() {
-  return (process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL).replace(/\/+$/, "")
+  const configured = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL
+  const url = new URL(configured)
+
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("BACKEND_URL must use HTTP or HTTPS.")
+  }
+
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error("BACKEND_URL must use HTTPS in production.")
+  }
+
+  return url.toString().replace(/\/+$/, "")
 }
 
 export function apiUrl(path: string) {
@@ -17,6 +30,7 @@ export function apiFetch(path: string, init?: RequestInit): Promise<Response> {
       ...init?.headers,
     },
     cache: init?.cache ?? "no-store",
+    signal: init?.signal ?? AbortSignal.timeout(15_000),
   })
 }
 
