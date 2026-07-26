@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { dictionaries, isLocale } from "@/lib/i18n";
 import { apiFetch } from "@/lib/api";
+import { decodeJwt } from "jose";
 
 export type LoginState = {
   error?: {
@@ -36,11 +37,15 @@ type LoginResponse = {
     avatar?: string;
     image?: string;
     profile_image?: string;
+    role?: string;
+    roles?: string[];
   };
   user?: ApiUser;
 };
 
 type ApiUser = {
+  role?: string;
+  roles?: string[];
   first_name?: string;
   firstName?: string;
   last_name?: string;
@@ -92,8 +97,23 @@ function getUserProfile(response: LoginResponse, fallbackEmail: string) {
       ("photo" in user ? user.photo : undefined) ??
       ""
   const image = sanitizeImageUrl(rawImage)
+  const accessToken = getAccessToken(response)
+  let tokenRoles: string[] = []
+  try {
+    const payload = accessToken ? decodeJwt(accessToken) : {}
+    const raw = payload.roles ?? payload.role
+    tokenRoles = Array.isArray(raw)
+      ? raw.filter((role): role is string => typeof role === "string")
+      : typeof raw === "string"
+        ? [raw]
+        : []
+  } catch {
+    tokenRoles = []
+  }
+  const rawRoles = user.roles ?? (user.role ? [user.role] : tokenRoles)
+  const roles = rawRoles.map((role) => role.toUpperCase())
 
-  return { email, name, image };
+  return { email, name, image, roles };
 }
 
 function sanitizeImageUrl(value: string) {
@@ -180,7 +200,11 @@ export async function login(
 
   const profile = getUserProfile(body, parsed.data.email.toLowerCase());
   await createSession(profile, accessToken);
-  redirect("/panel");
+  redirect(profile.roles.includes("MANAGER") &&
+    !profile.roles.includes("ADMIN") &&
+    !profile.roles.includes("SUPERADMIN")
+    ? "/panel/reviews/next"
+    : "/panel");
 }
 
 export async function logout() {

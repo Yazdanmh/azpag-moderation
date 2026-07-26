@@ -1,0 +1,111 @@
+"use client"
+
+import * as React from "react"
+import { useRouter } from "next/navigation"
+import { loadQualityReport } from "@/app/panel/moderation-actions"
+import { useI18n } from "@/components/providers"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type { ApiResult, EvaluationOutcome, QualityReportResponse } from "@/lib/moderation-types"
+import { formatAgreementRate } from "@/lib/moderation-utils"
+import { moderationDictionaries } from "@/lib/moderation-i18n"
+import { ModerationLoading, ResultState } from "./shared"
+
+function OutcomeBadge({ value, owner, noData, labels }: { value: EvaluationOutcome | null; owner: string; noData: string; labels: Record<EvaluationOutcome, string> }) {
+  if (!value) return <span className="text-muted-foreground">{noData}</span>
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">{owner}</span>
+      <Badge variant={value === "VIOLATION" ? "destructive" : value === "NO_VIOLATION" ? "secondary" : "outline"}>
+        {labels[value]}
+      </Badge>
+    </div>
+  )
+}
+
+export function QualityReport({ initial }: { initial: ApiResult<QualityReportResponse> }) {
+  const { locale } = useI18n()
+  const t = moderationDictionaries[locale]
+  const router = useRouter()
+  const [result, setResult] = React.useState(initial)
+  const [pending, startTransition] = React.useTransition()
+
+  function retry() {
+    startTransition(async () => {
+      const next = await loadQualityReport()
+      if (!next.ok && next.status === 401) return router.replace("/login")
+      setResult(next)
+    })
+  }
+
+  if (pending && !result.ok) return <ModerationLoading />
+  if (!result.ok) return <ResultState title={t.unableQuality} description={result.status === 401 ? t.sessionExpired : result.status === 403 ? t.forbidden : result.status === 429 ? t.rateLimited : result.status >= 500 ? t.serviceError : result.message} retry={retry} retryLabel={t.retry} />
+
+  const { summary, byDefinition, disagreements } = result.data
+  const outcomeLabels = {
+    VIOLATION: t.violation,
+    NO_VIOLATION: t.noViolation,
+    UNCERTAIN: t.uncertain,
+  }
+  const definitions = Array.isArray(byDefinition) ? byDefinition : []
+  const recent = Array.isArray(disagreements) ? disagreements : []
+  const metrics = [
+    [t.evaluatedSamples, summary.total],
+    [t.agreements, summary.agreements],
+    [t.disagreements, summary.disagreements],
+    [t.agreementRate, summary.agreementRate === null ? t.noData : formatAgreementRate(summary.agreementRate)],
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(([label, value], index) => (
+          <Card key={String(label)} className={index === 1 ? "border-emerald-500/30" : index === 2 ? "border-destructive/30" : ""}>
+            <CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl">{value}</CardTitle></CardHeader>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader><CardTitle>{t.metricsDefinition}</CardTitle><CardDescription>{t.metricsDescription}</CardDescription></CardHeader>
+        <CardContent>
+          {definitions.length ? (
+            <Table>
+              <TableHeader><TableRow><TableHead>{t.definition}</TableHead><TableHead>{t.rule}</TableHead><TableHead>{t.field}</TableHead><TableHead>{t.total}</TableHead><TableHead>{t.agreements}</TableHead><TableHead>{t.disagreements}</TableHead><TableHead>{t.rate}</TableHead></TableRow></TableHeader>
+              <TableBody>{definitions.map((metric) => (
+                <TableRow key={metric.definitionId}>
+                  <TableCell className="font-mono text-xs">{metric.definitionId}</TableCell>
+                  <TableCell>{metric.ruleId}</TableCell><TableCell>{metric.field}</TableCell>
+                  <TableCell>{metric.total}</TableCell><TableCell className="text-emerald-700">{metric.agreements}</TableCell>
+                  <TableCell className="text-destructive">{metric.disagreements}</TableCell><TableCell>{metric.agreementRate === null ? t.noData : formatAgreementRate(metric.agreementRate)}</TableCell>
+                </TableRow>
+              ))}</TableBody>
+            </Table>
+          ) : <p className="text-sm text-muted-foreground">{t.noMetrics}</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>{t.recentDisagreements}</CardTitle><CardDescription>{t.disagreementsDescription}</CardDescription></CardHeader>
+        <CardContent>
+          {recent.length ? (
+            <Table>
+              <TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.definition} / {t.field}</TableHead><TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead><TableHead>{t.completed}</TableHead></TableRow></TableHeader>
+              <TableBody>{recent.map((row) => (
+                <TableRow key={row.reviewItemId} className="bg-destructive/[0.025]">
+                  <TableCell><div>{row.postId}</div><div className="text-xs text-muted-foreground">{t.revision} {row.postRevision}</div></TableCell>
+                  <TableCell><div>{row.definitionId}</div><div className="text-xs text-muted-foreground">{row.ruleId} · {row.field}</div></TableCell>
+                  <TableCell><OutcomeBadge value={row.ai?.outcome ?? null} owner={t.ai} noData={t.noData} labels={outcomeLabels} /></TableCell>
+                  <TableCell>{row.ai ? row.ai.confidence.toLocaleString(locale) : t.noData}</TableCell>
+                  <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div></TableCell>
+                  <TableCell><OutcomeBadge value={row.human?.outcome ?? null} owner={t.human} noData={t.noData} labels={outcomeLabels} /></TableCell>
+                  <TableCell className="max-w-72 whitespace-normal">{row.human?.reason ?? t.noData}</TableCell>
+                  <TableCell>{row.completedAt ? new Date(row.completedAt).toLocaleString(locale) : t.noData}</TableCell>
+                </TableRow>
+              ))}</TableBody>
+            </Table>
+          ) : <p className="text-sm text-muted-foreground">{t.noDisagreements}</p>}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

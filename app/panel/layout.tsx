@@ -26,6 +26,7 @@ export default async function PanelLayout({
           name: session.name,
           email: session.email,
           image: session.image,
+          roles: session.roles,
         }}
         variant="inset"
       />

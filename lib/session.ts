@@ -32,10 +32,11 @@ export type Session = {
   name: string
   image: string
   accessToken: string
+  roles: string[]
 }
 
 export async function createSession(
-  profile: { email: string; name: string; image: string },
+  profile: { email: string; name: string; image: string; roles: string[] },
   accessToken: string,
 ) {
   const token = await new EncryptJWT({ ...profile, accessToken })
@@ -71,6 +72,9 @@ export async function getSession(): Promise<Session | null> {
           name: typeof payload.name === "string" ? payload.name : payload.email,
           image: typeof payload.image === "string" ? payload.image : "",
           accessToken: payload.accessToken,
+          roles: Array.isArray(payload.roles)
+            ? payload.roles.filter((role): role is string => typeof role === "string")
+            : [],
         }
       : null
   } catch {

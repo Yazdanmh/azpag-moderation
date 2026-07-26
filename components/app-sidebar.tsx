@@ -3,8 +3,9 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { FileCheck2Icon, LayoutDashboardIcon } from "lucide-react"
+import { ChartNoAxesCombinedIcon, FileCheck2Icon, LayoutDashboardIcon } from "lucide-react"
 import { useI18n } from "@/components/providers"
+import { hasModerationRole, isManagerOnly } from "@/lib/moderation-types"
 
 import { NavUser } from "@/components/nav-user"
 import {
@@ -24,14 +25,24 @@ export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: { name: string; email: string; image: string }
+  user: { name: string; email: string; image: string; roles: string[] }
 }) {
   const pathname = usePathname()
   const { locale, dictionary: t } = useI18n()
-  const navigation = [
-    { title: t.dashboard, href: "/panel", icon: LayoutDashboardIcon },
-    { title: t.reviews, href: "/panel/reviews", icon: FileCheck2Icon },
-  ]
+  const managerOnly = isManagerOnly(user.roles)
+  const homeHref = managerOnly ? "/panel/reviews/next" : "/panel"
+  const navigation = managerOnly
+    ? [{ title: t.reviewWorkspace, href: "/panel/reviews/next", icon: FileCheck2Icon }]
+    : [
+      { title: t.dashboard, href: "/panel", icon: LayoutDashboardIcon },
+      ...(hasModerationRole(user.roles)
+      ? [
+          { title: t.reviews, href: "/panel/reviews", icon: FileCheck2Icon },
+          { title: t.reviewWorkspace, href: "/panel/reviews/next", icon: FileCheck2Icon },
+          { title: t.qualityReport, href: "/panel/quality", icon: ChartNoAxesCombinedIcon },
+        ]
+      : []),
+    ]
 
   return (
     <Sidebar
@@ -46,7 +57,7 @@ export function AppSidebar({
             <SidebarMenuButton
               size="lg"
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href="/panel" />}
+              render={<Link href={homeHref} />}
             >
               <Image
                 src="/logo.png"
