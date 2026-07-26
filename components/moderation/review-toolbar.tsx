@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 type FilterDefinition = {
@@ -36,7 +36,6 @@ export function ReviewToolbar({
   filters,
   optionLabels,
   labels,
-  rtl,
   reviewerId,
   dateFrom,
   dateTo,
@@ -46,7 +45,6 @@ export function ReviewToolbar({
   filters: FilterDefinition[]
   optionLabels: Record<string, string>
   labels: Labels
-  rtl: boolean
   reviewerId?: string
   dateFrom?: string
   dateTo?: string
@@ -84,22 +82,22 @@ export function ReviewToolbar({
           <RefreshCwIcon className={cn("size-4", refreshing && "animate-spin")} />
         </Button>
 
-        <Sheet>
-          <SheetTrigger render={<Button type="button" variant="outline" className="flex-1 sm:flex-none" />}>
+        <Dialog>
+          <DialogTrigger render={<Button type="button" variant="outline" className="flex-1 sm:flex-none" />}>
             <FilterIcon className="size-4" />
             {labels.filters}
             {activeCount > 0 && <Badge variant="secondary">{activeCount}</Badge>}
-          </SheetTrigger>
-          <SheetContent side={rtl ? "left" : "right"} className="overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>{labels.filters}</SheetTitle>
-              <SheetDescription>{labels.filtersDescription}</SheetDescription>
-            </SheetHeader>
-            <form className="flex flex-1 flex-col gap-4 px-4">
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{labels.filters}</DialogTitle>
+              <DialogDescription>{labels.filtersDescription}</DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-4 sm:grid-cols-2">
               <input type="hidden" name="query" value={query ?? ""} />
               <input type="hidden" name="pageSize" value={pageSize} />
               {filters.map((filter) => (
-                <div key={filter.name} className="space-y-2">
+                <div key={filter.name} className="flex flex-col gap-2">
                   <label className="text-sm font-medium">{filter.label}</label>
                   <Select name={filter.name} defaultValue={filter.value ?? null}>
                     <SelectTrigger className="w-full">
@@ -116,21 +114,21 @@ export function ReviewToolbar({
                   </Select>
                 </div>
               ))}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2 sm:col-span-2">
                 <label htmlFor="reviewerId" className="text-sm font-medium">{labels.reviewerId}</label>
                 <Input id="reviewerId" name="reviewerId" defaultValue={reviewerId} placeholder={labels.reviewerId} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2"><label htmlFor="dateFrom" className="text-sm font-medium">{labels.from}</label><Input id="dateFrom" name="dateFrom" type="date" defaultValue={dateFrom?.slice(0, 10)} /></div>
-                <div className="space-y-2"><label htmlFor="dateTo" className="text-sm font-medium">{labels.to}</label><Input id="dateTo" name="dateTo" type="date" defaultValue={dateTo?.slice(0, 10)} /></div>
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div className="flex flex-col gap-2"><label htmlFor="dateFrom" className="text-sm font-medium">{labels.from}</label><Input id="dateFrom" name="dateFrom" type="date" defaultValue={dateFrom?.slice(0, 10)} /></div>
+                <div className="flex flex-col gap-2"><label htmlFor="dateTo" className="text-sm font-medium">{labels.to}</label><Input id="dateTo" name="dateTo" type="date" defaultValue={dateTo?.slice(0, 10)} /></div>
               </div>
-              <SheetFooter className="mt-auto px-0">
-                <Button type="submit">{labels.apply}</Button>
+              <DialogFooter className="mt-2 sm:col-span-2">
                 <Link href="/panel/reviews" className={buttonVariants({ variant: "outline" })}>{labels.clear}</Link>
-              </SheetFooter>
+                <Button type="submit">{labels.apply}</Button>
+              </DialogFooter>
             </form>
-          </SheetContent>
-        </Sheet>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

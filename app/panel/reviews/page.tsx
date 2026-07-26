@@ -100,7 +100,6 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
       <ReviewToolbar
         query={query.query}
         pageSize={pageSize}
-        rtl={locale !== "en"}
         reviewerId={query.reviewerId}
         dateFrom={query.dateFrom}
         dateTo={query.dateTo}

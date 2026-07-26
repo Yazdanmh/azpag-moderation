@@ -2,7 +2,7 @@ import type { Locale } from "@/lib/i18n"
 
 const en = {
   archive: "Review archive", archiveDescription: "Search and inspect all standard and quality moderation reviews.",
-  workspace: "Open review workspace", search: "Post ID or title", refresh: "Refresh reviews", filters: "Filters",
+  workspace: "Open review workspace", search: "Search", refresh: "Refresh reviews", filters: "Filters",
   filtersDescription: "Narrow the review archive by status, type, decision, reviewer, or date.", allStatuses: "All review statuses",
   allTypes: "All review types", allDecisions: "All decisions", allPostStatuses: "All post statuses",
   reviewerId: "Reviewer ID", from: "Date from", to: "Date to", newest: "Newest first",
@@ -45,7 +45,7 @@ const en = {
 
 const fa: typeof en = {
   archive: "آرشیف بررسی‌ها", archiveDescription: "همه بررسی‌های استاندارد و نمونه کیفیت را جستجو و مشاهده کنید.",
-  workspace: "بازکردن محیط بررسی", search: "شناسه یا عنوان آگهی", refresh: "تازه‌سازی بررسی‌ها", filters: "فیلترها",
+  workspace: "بازکردن محیط بررسی", search: "جستجو", refresh: "تازه‌سازی بررسی‌ها", filters: "فیلترها",
   filtersDescription: "آرشیف بررسی‌ها را بر اساس وضعیت، نوع، تصمیم، بررسی‌کننده یا تاریخ محدود کنید.", allStatuses: "همه وضعیت‌های بررسی",
   allTypes: "همه انواع بررسی", allDecisions: "همه تصمیم‌ها", allPostStatuses: "همه وضعیت‌های آگهی",
   reviewerId: "شناسه بررسی‌کننده", from: "از تاریخ", to: "تا تاریخ", newest: "جدیدترین ابتدا",
@@ -88,7 +88,7 @@ const fa: typeof en = {
 
 const ps: typeof en = {
   archive: "د بیاکتنو زېرمتون", archiveDescription: "ټولې معیاري او د کیفیت بیاکتنې ولټوئ او وګورئ.",
-  workspace: "د بیاکتنې چاپېریال پرانیزئ", search: "د اعلان پېژند یا سرلیک", refresh: "بیاکتنې تازه کړئ", filters: "چاڼونه",
+  workspace: "د بیاکتنې چاپېریال پرانیزئ", search: "لټون", refresh: "بیاکتنې تازه کړئ", filters: "چاڼونه",
   filtersDescription: "د بیاکتنو زېرمتون د حالت، ډول، پرېکړې، بیاکتونکي یا نېټې له مخې محدود کړئ.", allStatuses: "د بیاکتنې ټول حالتونه",
   allTypes: "د بیاکتنې ټول ډولونه", allDecisions: "ټولې پرېکړې", allPostStatuses: "د اعلان ټول حالتونه",
   reviewerId: "د بیاکتونکي پېژند", from: "له نېټې", to: "تر نېټې", newest: "نوي لومړی",

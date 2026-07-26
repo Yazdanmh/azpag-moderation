@@ -60,6 +60,7 @@ type ApiUser = {
   image_url?: string;
   profile_image?: string;
   profileImage?: string;
+  profile?: string | null;
   photo?: string;
 };
 
@@ -75,17 +76,29 @@ function getAccessToken(response: LoginResponse) {
 }
 
 function getUserProfile(response: LoginResponse, fallbackEmail: string) {
+  const accessToken = getAccessToken(response)
+  let tokenUser: ApiUser = {}
+  try {
+    const payload = accessToken ? decodeJwt(accessToken) : {}
+    const tokenSubject = (payload as Record<string, unknown>).sub
+    if (tokenSubject && typeof tokenSubject === "object" && !Array.isArray(tokenSubject)) {
+      tokenUser = tokenSubject as ApiUser
+    }
+  } catch {
+    tokenUser = {}
+  }
+
   const user = response.user ?? response.data?.user ?? response.data ?? {};
-  const firstName = user.first_name ?? ("firstName" in user ? user.firstName : undefined);
-  const lastName = user.last_name ?? ("lastName" in user ? user.lastName : undefined);
+  const firstName = user.first_name ?? ("firstName" in user ? user.firstName : undefined) ?? tokenUser.first_name ?? tokenUser.firstName;
+  const lastName = user.last_name ?? ("lastName" in user ? user.lastName : undefined) ?? tokenUser.last_name ?? tokenUser.lastName;
   const combinedName = [firstName, lastName].filter(Boolean).join(" ");
   const displayName =
     user.name ??
     ("full_name" in user ? user.full_name : undefined) ??
     ("fullName" in user ? user.fullName : undefined) ??
-    combinedName;
+    (combinedName || tokenUser.name || tokenUser.full_name || tokenUser.fullName);
 
-  const email = (user.email ?? fallbackEmail).trim().slice(0, 254)
+  const email = (user.email ?? tokenUser.email ?? fallbackEmail).trim().slice(0, 254)
   const name = (displayName || fallbackEmail).trim().slice(0, 160)
   const rawImage =
       user.avatar ??
@@ -95,13 +108,21 @@ function getUserProfile(response: LoginResponse, fallbackEmail: string) {
       user.profile_image ??
       ("profileImage" in user ? user.profileImage : undefined) ??
       ("photo" in user ? user.photo : undefined) ??
+      ("profile" in user ? user.profile : undefined) ??
+      tokenUser.avatar ??
+      tokenUser.avatar_url ??
+      tokenUser.image ??
+      tokenUser.image_url ??
+      tokenUser.profile_image ??
+      tokenUser.profileImage ??
+      tokenUser.photo ??
+      tokenUser.profile ??
       ""
   const image = sanitizeImageUrl(rawImage)
-  const accessToken = getAccessToken(response)
   let tokenRoles: string[] = []
   try {
     const payload = accessToken ? decodeJwt(accessToken) : {}
-    const raw = payload.roles ?? payload.role
+    const raw = payload.roles ?? payload.role ?? tokenUser.roles ?? tokenUser.role
     tokenRoles = Array.isArray(raw)
       ? raw.filter((role): role is string => typeof role === "string")
       : typeof raw === "string"
@@ -116,7 +137,8 @@ function getUserProfile(response: LoginResponse, fallbackEmail: string) {
   return { email, name, image, roles };
 }
 
-function sanitizeImageUrl(value: string) {
+function sanitizeImageUrl(value: unknown) {
+  if (typeof value !== "string") return ""
   const trimmed = value.trim().slice(0, 256)
   if (!trimmed) return ""
   if (trimmed.startsWith("/")) return trimmed
