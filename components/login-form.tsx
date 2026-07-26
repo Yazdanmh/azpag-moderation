@@ -14,7 +14,7 @@ import { login, type LoginState } from "@/app/actions"
 import { useI18n } from "@/components/providers"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardDescription, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
@@ -41,21 +41,20 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   }, [state.error])
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
+    <div className={cn("flex flex-col gap-8", className)} {...props}>
+      <div className="text-center">
           <Image
             src="/logo.png"
             alt="Azpag"
             width={56}
             height={56}
-            className="mx-auto mb-2 size-14 object-contain"
+            className="mx-auto mb-5 size-16 object-contain"
             priority
           />
-          <CardTitle>{t.loginTitle}</CardTitle>
-          <CardDescription>{t.loginDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
+          <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
+          <CardDescription className="mt-2 text-sm">{t.loginDescription}</CardDescription>
+      </div>
+      <div>
           <form action={formAction}>
             <input type="hidden" name="locale" value={locale} />
             <FieldGroup>
@@ -102,8 +101,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               </Field>
             </FieldGroup>
           </form>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }
