@@ -66,7 +66,7 @@ export default async function PostHistoryPage({ params }: { params: Promise<{ po
           <PostFeatures features={features} locale={locale} labels={t} />
         </div>
         <div className="space-y-4">
-        <ModerationReasons value={post.moderation_reason} locale={locale} label={t.moderationReason} prominent />
+        {post.moderation_reason != null && <ModerationReasons value={post.moderation_reason} locale={locale} label={t.moderationReason} prominent />}
         <div className="rounded-md border bg-muted/20 p-4">
           <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <Info label={t.created} value={new Date(post.created_at).toLocaleString(locale)} />
@@ -77,7 +77,13 @@ export default async function PostHistoryPage({ params }: { params: Promise<{ po
         </div>
       </div>
     </CardContent></Card>
-    <div className="space-y-8">{reviews.length ? reviews.map((review) => <section key={review.id} className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3"><h2 className="text-xl font-semibold">{reviewHistoryTitle(t.reviewVersionTitle, review.type === "STANDARD" ? t.standard : t.qualitySampleType, review.postRevision.toLocaleString(locale))}</h2><Link href={`/panel/reviews/${review.id}`} className={buttonVariants({ variant: "outline" })}>{t.openReview}</Link></div><ReviewDetail review={review} showPost={false} locale={locale} /></section>) : <Card><CardContent className="py-12 text-center text-muted-foreground">{t.noHistory}</CardContent></Card>}</div>
+    <div className="space-y-8">{reviews.length ? reviews.map((review) => <section key={review.id} className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+        <h2 className="text-xl font-semibold">{reviewHistoryTitle(t.reviewVersionTitle, review.type === "STANDARD" ? t.standard : t.qualitySampleType, review.postRevision.toLocaleString(locale))}</h2>
+        <Link href={`/panel/reviews/${review.id}`} className={buttonVariants({ variant: "outline" })}>{t.openReview}</Link>
+      </div>
+      <ReviewDetail review={review} showPost={false} locale={locale} />
+    </section>) : <Card><CardContent className="py-12 text-center text-muted-foreground">{t.noHistory}</CardContent></Card>}</div>
   </main>
 }
 function PostIdentityRow({ post, locale, statusLabel, revisionLabel }: { post: ModerationHistoryPost; locale: Locale; statusLabel?: string; revisionLabel: string }) {

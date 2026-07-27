@@ -1,5 +1,9 @@
 import Link from "next/link"
+import type { ReactNode } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { CheckIcon, ChevronDownIcon, EyeIcon, XIcon } from "lucide-react"
 import type { ModerationReviewDetail } from "@/lib/moderation-types"
 import { StatusBadge, personName, safeJson } from "./review-badges"
 import type { Locale } from "@/lib/i18n"
@@ -21,6 +25,8 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
     [copy.humanDuration, review.humanShownAt ?? review.assignment?.firstShownAt, review.humanCompletedAt ?? review.assignment?.completedAt],
   ] as const
   return <div className="space-y-6">
+    <CollapsibleCard title={t.detail}>
+    <div className="space-y-6">
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <Card><CardHeader><CardDescription>{t.status}</CardDescription><CardTitle><StatusBadge value={review.status} label={localizedValue(review.status, t)} /></CardTitle></CardHeader></Card>
       <Card><CardHeader><CardDescription>{t.decision}</CardDescription><CardTitle><StatusBadge value={review.finalDecision} label={localizedValue(review.finalDecision, t)} /></CardTitle></CardHeader></Card>
@@ -55,67 +61,79 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
         </CardContent>
       </Card>
     </div>
-    <Card>
-      <CardHeader>
-        <CardTitle>{copy.policyChecks}</CardTitle>
-        <CardDescription>{items.length.toLocaleString(locale)} {copy.policyChecksDescription}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    </div>
+    </CollapsibleCard>
+    <CollapsibleCard title={copy.policyChecks} description={`${items.length.toLocaleString(locale)} ${copy.policyChecksDescription}`}>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {items.length ? items.map((item, index) => {
           const definition = localizedModerationDefinition({ ruleId: item.ruleId, field: item.field }, locale)
-          return <Card key={item.id} className="border">
-            <CardHeader>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <CardDescription>{copy.checkNumber.replace("{number}", (index + 1).toLocaleString(locale))}</CardDescription>
-                  <CardTitle className="mt-1 text-base">{definition.rule}</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">{copy.checkedArea}: {definition.field}</p>
-                </div>
-                <StatusBadge value={item.finalOutcome ?? item.status} label={localizedItemResult(item.finalOutcome, item.status, copy)} />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-md bg-muted/50 p-4">
-                <div className="text-xs text-muted-foreground">{copy.conclusion}</div>
-                <p className="mt-1 font-medium">{item.finalReason || localizedItemExplanation(item.finalOutcome, copy)}</p>
-              </div>
-              <div>
-                <h4 className="mb-3 text-sm font-medium">{copy.reviewHistory}</h4>
-                {item.evaluations?.length ? <div className="space-y-3">
-                  {item.evaluations.map((evaluation) => <div key={evaluation.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{evaluation.reason || localizedItemExplanation(evaluation.outcome, copy)}</p>
+          const result = localizedItemResult(item.finalOutcome, item.status, copy)
+          return <div key={item.id} className="min-w-0 py-2">
+            <div className="flex w-full flex-col">
+              <div className="flex min-w-0 items-start gap-3">
+                <ResultCheckbox outcome={item.finalOutcome} label={result} />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-medium leading-5">{definition.rule}</p>
+                  <div className="mt-1 flex min-w-0 items-center gap-0">
+                    <p className="truncate text-xs text-muted-foreground">{definition.field}</p>
+                    <Dialog>
+                      <DialogTrigger render={<Button type="button" variant="ghost" size="xs" className="h-7 shrink-0 px-1.5 text-primary hover:bg-primary/10 hover:text-primary" />}>
+                        <EyeIcon />
+                        {copy.viewDetails}
+                      </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>{definition.rule}</DialogTitle>
+                    <DialogDescription>{copy.checkNumber.replace("{number}", (index + 1).toLocaleString(locale))} · {copy.checkedArea}: {definition.field}</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 p-4">
+                      <div><div className="text-xs text-muted-foreground">{copy.conclusion}</div><p className="mt-1 font-medium">{localizedReasonText(item.reasonTranslations, locale, item.finalReason) || localizedItemExplanation(item.finalOutcome, copy)}</p></div>
+                      <StatusBadge value={item.finalOutcome ?? item.status} label={result} />
                     </div>
-                    <div className="shrink-0 text-start sm:text-end">
-                      <StatusBadge value={evaluation.outcome} label={localizedItemResult(evaluation.outcome, null, copy)} />
-                      <p className="mt-1 text-xs text-muted-foreground">{formatDate(evaluation.createdAt, locale)}</p>
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium">{copy.reviewHistory}</h4>
+                      {item.evaluations?.length ? <div className="space-y-3">
+                        {item.evaluations.map((evaluation) => <div key={evaluation.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0"><p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p><p className="mt-1 text-sm text-muted-foreground">{localizedReasonText(evaluation.reasonTranslations, locale, evaluation.reason) || localizedItemExplanation(evaluation.outcome, copy)}</p></div>
+                          <div className="shrink-0 text-start sm:text-end"><StatusBadge value={evaluation.outcome} label={localizedItemResult(evaluation.outcome, null, copy)} /><p className="mt-1 text-xs text-muted-foreground">{formatDate(evaluation.createdAt, locale)}</p></div>
+                        </div>)}
+                      </div> : <p className="text-sm text-muted-foreground">{copy.noReviewHistory}</p>}
                     </div>
-                  </div>)}
-                </div> : <p className="text-sm text-muted-foreground">{copy.noReviewHistory}</p>}
-              </div>
-              {item.isQualitySample && <div className="rounded-md border p-3 text-sm">
-                <p className="font-medium">{copy.qualityCheck}</p>
-                <p className="mt-1 text-muted-foreground">{item.qualityAgreement === true ? copy.qualityAgreed : item.qualityAgreement === false ? copy.qualityDisagreed : copy.qualityPending}</p>
-              </div>}
-              <details className="group text-sm">
-                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{copy.technicalDetails}</summary>
-                <div className="mt-4 space-y-4">
-                  <JsonBlock title={t.itemEvidence} value={item.evidence} />
-                  {item.evaluations?.map((evaluation) => <div key={`${evaluation.id}-raw`} className="grid gap-4 lg:grid-cols-2"><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.evidence}`} value={evaluation.evidence} /><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.rawResponse}`} value={evaluation.rawResponse} /></div>)}
+                    {item.isQualitySample && <div className="rounded-md border p-3 text-sm"><p className="font-medium">{copy.qualityCheck}</p><p className="mt-1 text-muted-foreground">{item.qualityAgreement === true ? copy.qualityAgreed : item.qualityAgreement === false ? copy.qualityDisagreed : copy.qualityPending}</p></div>}
+                    <details className="group text-sm">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{copy.technicalDetails}</summary>
+                      <div className="mt-4 space-y-4"><JsonBlock title={t.itemEvidence} value={item.evidence} />{item.evaluations?.map((evaluation) => <div key={`${evaluation.id}-raw`} className="grid gap-4 lg:grid-cols-2"><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.evidence}`} value={evaluation.evidence} /><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.rawResponse}`} value={evaluation.rawResponse} /></div>)}</div>
+                    </details>
+                  </div>
+                </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
-              </details>
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          </div>
         }) : <p className="text-muted-foreground">{t.noItems}</p>}
-      </CardContent>
-    </Card>
-    <Card><CardHeader><CardTitle>{t.snapshot}</CardTitle><CardDescription>{t.snapshotDescription}</CardDescription></CardHeader><CardContent><pre className="max-h-[36rem] overflow-auto rounded-md bg-muted p-4 text-xs whitespace-pre-wrap">{safeJson(review.postSnapshot)}</pre></CardContent></Card>
+      </div>
+    </CollapsibleCard>
+    <CollapsibleCard title={t.snapshot} description={t.snapshotDescription}><pre className="max-h-[36rem] overflow-auto rounded-md bg-muted p-4 text-xs whitespace-pre-wrap">{safeJson(review.postSnapshot)}</pre></CollapsibleCard>
   </div>
 }
 
 function Detail({ label, value }: { label: string; value: unknown }) {
   return <div className="min-w-0"><div className="text-xs text-muted-foreground">{label}</div><div className="mt-1 break-words whitespace-pre-wrap">{safeJson(value)}</div></div>
+}
+function CollapsibleCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return <details className="group rounded-md border bg-card">
+    <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-3 p-4 marker:content-none">
+      <div className="min-w-0">
+        <div className="font-semibold">{title}</div>
+        {description && <div className="mt-1 text-sm text-muted-foreground">{description}</div>}
+      </div>
+      <ChevronDownIcon className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+    </summary>
+    <div className="border-t p-4">{children}</div>
+  </details>
 }
 function JsonBlock({ title, value }: { title: string; value: unknown }) {
   if (value === null || value === undefined) return null
@@ -149,11 +167,31 @@ function localizedItemExplanation(outcome: string | null | undefined, copy: Deta
   return copy.noConclusion
 }
 
+function localizedReasonText(translations: Record<string, string> | null | undefined, locale: Locale, fallback: string | null | undefined) {
+  if (!translations) return fallback || ""
+  const aliases = locale === "fa" ? ["fa", "prs", "dari"] : [locale]
+  for (const language of aliases) {
+    const value = translations[language]
+    if (typeof value === "string" && value.trim()) return value
+  }
+  return fallback || translations.en || translations.fa || translations.ps || ""
+}
+
 function localizedActor(actor: string, copy: DetailCopy) {
   if (actor === "HUMAN") return copy.humanReviewer
   if (actor === "AI") return copy.aiReviewer
   if (actor === "SYSTEM") return copy.automaticCheck
   return copy.reviewerLabel
+}
+
+function ResultCheckbox({ outcome, label }: { outcome: string | null | undefined; label: string }) {
+  if (outcome === "NO_VIOLATION") {
+    return <span role="img" aria-label={label} className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-md border border-green-600 bg-green-600 text-white"><CheckIcon className="size-4" /></span>
+  }
+  if (outcome === "VIOLATION") {
+    return <span role="img" aria-label={label} className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-md border border-destructive bg-destructive text-white"><XIcon className="size-4" /></span>
+  }
+  return <span role="img" aria-label={label} className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-md border border-amber-500 bg-amber-50 text-sm font-bold text-amber-700">!</span>
 }
 
 function formatDuration(start: string | null | undefined, end: string | null | undefined, locale: Locale, t: typeof moderationHistoryDictionaries.en) {
@@ -212,6 +250,7 @@ const detailCopy = {
     qualityAgreed: "The independent quality check agreed with the original result.",
     qualityDisagreed: "The independent quality check found a different result.", qualityPending: "The quality check is not completed yet.",
     technicalDetails: "Show technical details",
+    viewDetails: "View details",
   },
   fa: {
     outcomeSummary: "نتیجه بررسی", outcomeDescription: "خلاصه روشن از بررسی‌کننده آگهی و دلیل تصمیم نهایی.",
@@ -229,6 +268,7 @@ const detailCopy = {
     qualityAgreed: "بررسی مستقل کیفیت با نتیجه اصلی موافق بود.",
     qualityDisagreed: "بررسی مستقل کیفیت نتیجه متفاوتی داشت.", qualityPending: "بررسی کیفیت هنوز تکمیل نشده است.",
     technicalDetails: "نمایش جزئیات فنی",
+    viewDetails: "مشاهده جزئیات",
   },
   ps: {
     outcomeSummary: "د بیاکتنې پایله", outcomeDescription: "چا اعلان بیاکتلی او وروستۍ پرېکړه ولې شوې، روښانه لنډیز.",
@@ -246,6 +286,7 @@ const detailCopy = {
     qualityAgreed: "خپلواکه کیفیتي ارزونه له اصلي پایلې سره موافقه وه.",
     qualityDisagreed: "خپلواکې کیفیتي ارزونې بله پایله وموندله.", qualityPending: "د کیفیت ارزونه لا بشپړه شوې نه ده.",
     technicalDetails: "تخنیکي جزئیات ښکاره کړئ",
+    viewDetails: "جزئیات وګورئ",
   },
 } satisfies Record<Locale, Record<string, string>>
 

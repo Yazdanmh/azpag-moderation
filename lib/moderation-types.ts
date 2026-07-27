@@ -259,6 +259,7 @@ export interface ModerationEvaluation {
   outcome: EvaluationOutcome
   confidence: number | null
   reason: string | null
+  reasonTranslations?: Record<string, string> | null
   evidence: unknown
   model: string | null
   modelVersion: string | null
@@ -278,6 +279,7 @@ export interface ModerationReviewDetailItem {
   status: ReviewItemStatus
   finalOutcome: EvaluationOutcome | null
   finalReason: string | null
+  reasonTranslations?: Record<string, string> | null
   evidence: unknown
   sourceItemId: string | null
   isQualitySample: boolean
@@ -289,6 +291,7 @@ export interface ModerationReviewDetailItem {
     definitionId: string
     finalOutcome: EvaluationOutcome | null
     finalReason: string | null
+    reasonTranslations?: Record<string, string> | null
     evaluations: ModerationEvaluation[]
   } | null
 }
