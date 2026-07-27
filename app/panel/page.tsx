@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { BotIcon, BrainCircuitIcon, FileCheck2Icon, ListTodoIcon, UsersIcon } from "lucide-react"
+import { BanIcon, BotIcon, BrainCircuitIcon, FileCheck2Icon, ListTodoIcon, PencilLineIcon, SendIcon, UsersIcon, type LucideIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DateRangeDialog } from "@/components/moderation/date-range-dialog"
 import { ResultState } from "@/components/moderation/shared"
@@ -96,7 +96,12 @@ export default async function DashboardPage({
         {volumeCards.map(({ label, value, description, icon: Icon }) => (
           <Card key={label}>
             <CardHeader>
-              <div className="flex items-center justify-between gap-3"><CardDescription>{label}</CardDescription><Icon className="size-5 text-primary" /></div>
+              <div className="flex items-center justify-between gap-3">
+                <CardDescription>{label}</CardDescription>
+                <span className="grid size-10 place-items-center rounded-md bg-[#F5F5F5] text-primary">
+                  <Icon className="size-5" />
+                </span>
+              </div>
               <CardTitle className="text-3xl">{value}</CardTitle>
               <CardDescription>{description}</CardDescription>
             </CardHeader>
@@ -121,9 +126,9 @@ export default async function DashboardPage({
       <Card>
         <CardHeader><CardTitle>{t.decisionDistribution}</CardTitle><CardDescription>{number(operations.volume.completedReviews, locale)} {t.completedReviews}</CardDescription></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Decision label={t.publishDecision} value={decisionMap.get("PUBLISH")} locale={locale} noData={t.noData} />
-          <Decision label={t.rejectDecision} value={decisionMap.get("REJECT")} locale={locale} noData={t.noData} />
-          <Decision label={t.needsChanges} value={decisionMap.get("NEEDS_CHANGES")} locale={locale} noData={t.noData} />
+          <Decision label={t.publishDecision} value={decisionMap.get("PUBLISH")} locale={locale} noData={t.noData} icon={SendIcon} />
+          <Decision label={t.rejectDecision} value={decisionMap.get("REJECT")} locale={locale} noData={t.noData} icon={BanIcon} />
+          <Decision label={t.needsChanges} value={decisionMap.get("NEEDS_CHANGES")} locale={locale} noData={t.noData} icon={PencilLineIcon} />
         </CardContent>
       </Card>
 
@@ -147,8 +152,21 @@ function TimingRow({ label, value, locale, t }: { label: string; value: Duration
   return <TableRow><TableCell className="font-medium">{label}</TableCell><TableCell>{number(value.count, locale)}</TableCell><TableCell>{duration(value.medianMs, locale, t)}</TableCell><TableCell>{duration(value.p90Ms, locale, t)}</TableCell><TableCell>{duration(value.p95Ms, locale, t)}</TableCell></TableRow>
 }
 
-function Decision({ label, value, locale, noData }: { label: string; value?: { decision: ModerationDecision; count: number; percentage: number | null }; locale: Locale; noData: string }) {
-  return <div className="rounded-md border p-4"><div className="text-sm text-muted-foreground">{label}</div><div className="mt-2 text-2xl font-semibold">{number(value?.count ?? 0, locale)}</div><div className="text-sm text-primary">{percentage(value?.percentage ?? null, locale, noData)}</div></div>
+function Decision({ label, value, locale, noData, icon: Icon }: { label: string; value?: { decision: ModerationDecision; count: number; percentage: number | null }; locale: Locale; noData: string; icon: LucideIcon }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <CardDescription>{label}</CardDescription>
+          <span className="grid size-10 place-items-center rounded-md bg-[#F5F5F5] text-primary">
+            <Icon className="size-5" />
+          </span>
+        </div>
+        <CardTitle className="text-3xl">{number(value?.count ?? 0, locale)}</CardTitle>
+        <CardDescription className="text-primary">{percentage(value?.percentage ?? null, locale, noData)}</CardDescription>
+      </CardHeader>
+    </Card>
+  )
 }
 
 function ReviewerRow({ reviewer, count, timing, locale, t }: { reviewer: ModerationPerson; count: number; timing: DurationDistribution; locale: Locale; t: typeof moderationHistoryDictionaries.en }) {

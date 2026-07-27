@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { BadgeCheckIcon, BotIcon, CheckCheckIcon, CircleGaugeIcon, FlaskConicalIcon, PercentIcon, Settings2Icon, TestTube2Icon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react"
 import { useI18n } from "@/components/providers"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { ApiResult, EvaluationOutcome, QualityReportResponse } from "@/lib/moderation-types"
 import { formatAgreementRate } from "@/lib/moderation-utils"
 import { moderationDictionaries } from "@/lib/moderation-i18n"
+import { localizedModerationDefinition } from "@/lib/moderation-definition-i18n"
 import { ModerationLoading, ResultState } from "./shared"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -53,16 +55,16 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
     return <ResultState title={t.noQualityData} description={t.noQualityDataDescription} retry={retry} retryLabel={t.retry} fill />
   }
   const metrics = [
-    [t.confidentAiItems, sampling.confidentAiItems],
-    [t.sampledItems, sampling.sampledItems],
-    [t.reviewedSamples, sampling.reviewedSamples],
-    [t.sampledPercentage, sampling.sampledPercentage === null ? t.noData : formatAgreementRate(sampling.sampledPercentage)],
-    [t.reviewedSamplePercentage, sampling.reviewedSamplePercentage === null ? t.noData : formatAgreementRate(sampling.reviewedSamplePercentage)],
-    [t.configuredSampleRate, formatAgreementRate(sampling.configuredSampleRate)],
-    [t.confidenceThreshold, formatAgreementRate(sampling.confidenceThreshold)],
-    [t.agreements, summary.agreements],
-    [t.disagreements, summary.disagreements],
-    [t.agreementRate, summary.agreementRate === null ? t.noData : formatAgreementRate(summary.agreementRate)],
+    { label: t.confidentAiItems, value: sampling.confidentAiItems, icon: BotIcon },
+    { label: t.sampledItems, value: sampling.sampledItems, icon: FlaskConicalIcon },
+    { label: t.reviewedSamples, value: sampling.reviewedSamples, icon: TestTube2Icon },
+    { label: t.sampledPercentage, value: sampling.sampledPercentage === null ? t.noData : formatAgreementRate(sampling.sampledPercentage), icon: PercentIcon },
+    { label: t.reviewedSamplePercentage, value: sampling.reviewedSamplePercentage === null ? t.noData : formatAgreementRate(sampling.reviewedSamplePercentage), icon: BadgeCheckIcon },
+    { label: t.configuredSampleRate, value: formatAgreementRate(sampling.configuredSampleRate), icon: Settings2Icon },
+    { label: t.confidenceThreshold, value: formatAgreementRate(sampling.confidenceThreshold), icon: CircleGaugeIcon },
+    { label: t.agreements, value: summary.agreements, icon: ThumbsUpIcon },
+    { label: t.disagreements, value: summary.disagreements, icon: ThumbsDownIcon },
+    { label: t.agreementRate, value: summary.agreementRate === null ? t.noData : formatAgreementRate(summary.agreementRate), icon: CheckCheckIcon },
   ]
   const pageHref = (page: number) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
@@ -74,9 +76,17 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {metrics.map(([label, value], index) => (
-          <Card key={String(label)} className={index === 7 ? "border-emerald-500/30" : index === 8 ? "border-destructive/30" : ""}>
-            <CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl">{value}</CardTitle></CardHeader>
+        {metrics.map(({ label, value, icon: Icon }) => (
+          <Card key={label}>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardDescription>{label}</CardDescription>
+                <span className="grid size-10 place-items-center rounded-md bg-[#F5F5F5] text-primary">
+                  <Icon className="size-5" />
+                </span>
+              </div>
+              <CardTitle className="text-3xl">{value}</CardTitle>
+            </CardHeader>
           </Card>
         ))}
       </div>
@@ -86,14 +96,16 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
           {definitions.length ? (
             <Table>
               <TableHeader><TableRow><TableHead>{t.definition}</TableHead><TableHead>{t.rule}</TableHead><TableHead>{t.field}</TableHead><TableHead>{t.total}</TableHead><TableHead>{t.agreements}</TableHead><TableHead>{t.disagreements}</TableHead><TableHead>{t.rate}</TableHead></TableRow></TableHeader>
-              <TableBody>{definitions.map((metric) => (
+              <TableBody>{definitions.map((metric) => {
+                const localized = localizedModerationDefinition(metric, locale)
+                return (
                 <TableRow key={metric.definitionId}>
-                  <TableCell className="font-mono text-xs">{metric.definitionId}</TableCell>
-                  <TableCell>{metric.ruleId}</TableCell><TableCell>{metric.field}</TableCell>
+                  <TableCell><div className="font-medium">{localized.definition}</div><div className="mt-1 font-mono text-xs text-muted-foreground">{metric.definitionId}</div></TableCell>
+                  <TableCell>{localized.rule}</TableCell><TableCell>{localized.field}</TableCell>
                   <TableCell>{metric.total}</TableCell><TableCell className="text-emerald-700">{metric.agreements}</TableCell>
                   <TableCell className="text-destructive">{metric.disagreements}</TableCell><TableCell>{metric.agreementRate === null ? t.noData : formatAgreementRate(metric.agreementRate)}</TableCell>
                 </TableRow>
-              ))}</TableBody>
+              )})}</TableBody>
             </Table>
           ) : <ResultState title={t.noMetrics} description={t.metricsDescription} />}
         </CardContent>
@@ -104,10 +116,12 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
           {recent.length ? (
             <Table>
               <TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.definition} / {t.field}</TableHead><TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead><TableHead>{t.completed}</TableHead></TableRow></TableHeader>
-              <TableBody>{recent.map((row) => (
+              <TableBody>{recent.map((row) => {
+                const localized = localizedModerationDefinition(row, locale)
+                return (
                 <TableRow key={row.reviewItemId} className="bg-destructive/[0.025]">
                   <TableCell><div>{row.postId}</div><div className="text-xs text-muted-foreground">{t.revision} {row.postRevision}</div></TableCell>
-                  <TableCell><div>{row.definitionId}</div><div className="text-xs text-muted-foreground">{row.ruleId} · {row.field}</div></TableCell>
+                  <TableCell><div>{localized.definition}</div><div className="font-mono text-xs text-muted-foreground">{row.definitionId}</div></TableCell>
                   <TableCell><OutcomeBadge value={row.ai?.outcome ?? null} owner={t.ai} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell>{row.ai ? row.ai.confidence.toLocaleString(locale) : t.noData}</TableCell>
                   <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div>{row.ai?.reason && <div className="mt-1 max-w-72 whitespace-normal text-xs text-muted-foreground">{translatedReason(row.ai.reasonTranslations, locale) || row.ai.reason}</div>}</TableCell>
@@ -115,7 +129,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
                   <TableCell className="max-w-72 whitespace-normal">{row.human?.reason ?? t.noData}</TableCell>
                   <TableCell>{row.completedAt ? new Date(row.completedAt).toLocaleString(locale) : t.noData}</TableCell>
                 </TableRow>
-              ))}</TableBody>
+              )})}</TableBody>
             </Table>
           ) : <ResultState title={t.noDisagreements} description={t.disagreementsDescription} />}
           <div className="mt-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{disagreementPagination.total.toLocaleString(locale)} {t.disagreements} · {t.page} {disagreementPagination.page.toLocaleString(locale)} {t.of} {Math.max(1, disagreementPagination.totalPages).toLocaleString(locale)}</p><div className="flex gap-2"><Link href={disagreementPagination.hasPreviousPage ? pageHref(disagreementPagination.page - 1) : "#"} aria-disabled={!disagreementPagination.hasPreviousPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasPreviousPage && "pointer-events-none opacity-50")}>{t.previous}</Link><Link href={disagreementPagination.hasNextPage ? pageHref(disagreementPagination.page + 1) : "#"} aria-disabled={!disagreementPagination.hasNextPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasNextPage && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
