@@ -397,7 +397,37 @@ export interface ModerationHistoryPost {
     medium?: { url: string; size?: number; extension?: string } | string | null
     isMain?: boolean
   }>
-  categories?: Array<{ id: number; name: string; slug?: string | null }>
+  categories?: Array<{
+    id: number
+    name: string
+    slug?: string | null
+    translations?: Array<{ language: string; value: string }>
+  }>
+  fieldValues?: Array<{
+    id: string
+    value: unknown
+    currency?: string | null
+    field: {
+      id: string
+      key: string
+      type: string
+      order: number
+      localizations?: Array<{ language: string; key?: string; value: string }>
+      options?: Array<{
+        value: string
+        localizations?: Array<{ language: string; key?: string; value: string }>
+      }>
+    }
+  }>
+  features?: Array<{
+    id: string
+    feature: {
+      id: string
+      key: string
+      order: number
+      localizations?: Array<{ language: string; key?: string; value: string }>
+    }
+  }>
 }
 
 export interface ModerationPostHistory {
