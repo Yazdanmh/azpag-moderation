@@ -3,6 +3,11 @@ import "server-only"
 import { authenticatedApiFetch } from "@/lib/api"
 import type {
   ModerationReview,
+  ModerationReviewShownAcknowledgement,
+  ModerationMetricsQuery,
+  ModerationOperationalMetrics,
+  ModerationQualityQuery,
+  ModerationQueueMetrics,
   QualityReportResponse,
   ModerationPostHistory,
   ModerationReviewDetail,
@@ -18,6 +23,19 @@ export { ApiResponseError as ModerationApiError }
 export async function getNextModerationReview(accessToken: string) {
   return parseApiResponse<ModerationReview | null>(
     await authenticatedApiFetch("/api/moderation/reviews/next", accessToken),
+  )
+}
+
+export async function acknowledgeModerationReviewShown(
+  accessToken: string,
+  reviewId: string,
+) {
+  return parseApiResponse<ModerationReviewShownAcknowledgement>(
+    await authenticatedApiFetch(
+      `/api/moderation/reviews/${encodeURIComponent(reviewId)}/shown`,
+      accessToken,
+      { method: "POST" },
+    ),
   )
 }
 
@@ -40,9 +58,33 @@ export async function submitModerationEvaluation(
   )
 }
 
-export async function getModerationQualityReport(accessToken: string) {
+export async function getModerationQualityReport(
+  accessToken: string,
+  query: ModerationQualityQuery = {},
+) {
   return parseApiResponse<QualityReportResponse>(
-    await authenticatedApiFetch("/api/moderation/quality/report", accessToken),
+    await authenticatedApiFetch(
+      `/api/moderation/quality/report${buildQueryString({ ...query })}`,
+      accessToken,
+    ),
+  )
+}
+
+export async function getModerationQueueMetrics(accessToken: string) {
+  return parseApiResponse<ModerationQueueMetrics>(
+    await authenticatedApiFetch("/api/moderation/metrics/queue", accessToken),
+  )
+}
+
+export async function getModerationOperationalMetrics(
+  accessToken: string,
+  query: ModerationMetricsQuery = {},
+) {
+  return parseApiResponse<ModerationOperationalMetrics>(
+    await authenticatedApiFetch(
+      `/api/moderation/metrics/operations${buildQueryString({ ...query })}`,
+      accessToken,
+    ),
   )
 }
 

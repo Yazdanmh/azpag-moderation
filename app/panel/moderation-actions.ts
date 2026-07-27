@@ -1,6 +1,7 @@
 "use server"
 
 import {
+  acknowledgeModerationReviewShown,
   getModerationQualityReport,
   getNextModerationReview,
   ModerationApiError,
@@ -11,6 +12,7 @@ import {
   type ApiResult,
   type HumanReviewOutcome,
   type ModerationReview,
+  type ModerationReviewShownAcknowledgement,
   type QualityReportResponse,
   type SubmitHumanEvaluationResponse,
 } from "@/lib/moderation-types"
@@ -42,6 +44,18 @@ async function run<T>(operation: (token: string) => Promise<T>): Promise<ApiResu
 
 export async function loadNextReview(): Promise<ApiResult<ModerationReview | null>> {
   return run(getNextModerationReview)
+}
+
+const reviewIdSchema = z.string().min(1).max(200)
+
+export async function acknowledgeReviewShown(
+  reviewId: string,
+): Promise<ApiResult<ModerationReviewShownAcknowledgement>> {
+  const parsed = reviewIdSchema.safeParse(reviewId)
+  if (!parsed.success) {
+    return { ok: false, status: 400, message: "The review ID is invalid." }
+  }
+  return run((token) => acknowledgeModerationReviewShown(token, parsed.data))
 }
 
 const submissionSchema = z.object({

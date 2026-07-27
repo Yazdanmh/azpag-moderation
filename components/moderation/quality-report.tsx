@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { loadQualityReport } from "@/app/panel/moderation-actions"
 import { useI18n } from "@/components/providers"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,8 @@ import type { ApiResult, EvaluationOutcome, QualityReportResponse } from "@/lib/
 import { formatAgreementRate } from "@/lib/moderation-utils"
 import { moderationDictionaries } from "@/lib/moderation-i18n"
 import { ModerationLoading, ResultState } from "./shared"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 function OutcomeBadge({ value, owner, noData, labels }: { value: EvaluationOutcome | null; owner: string; noData: string; labels: Record<EvaluationOutcome, string> }) {
   if (!value) return <span className="text-muted-foreground">{noData}</span>
@@ -24,25 +26,21 @@ function OutcomeBadge({ value, owner, noData, labels }: { value: EvaluationOutco
   )
 }
 
-export function QualityReport({ initial }: { initial: ApiResult<QualityReportResponse> }) {
+export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial: ApiResult<QualityReportResponse>; dateFrom?: string; dateTo?: string; pageSize: number }) {
   const { locale } = useI18n()
   const t = moderationDictionaries[locale]
   const router = useRouter()
-  const [result, setResult] = React.useState(initial)
+  const result = initial
   const [pending, startTransition] = React.useTransition()
 
   function retry() {
-    startTransition(async () => {
-      const next = await loadQualityReport()
-      if (!next.ok && next.status === 401) return router.replace("/login")
-      setResult(next)
-    })
+    startTransition(() => router.refresh())
   }
 
   if (pending && !result.ok) return <ModerationLoading />
   if (!result.ok) return <ResultState title={t.unableQuality} description={result.status === 401 ? t.sessionExpired : result.status === 403 ? t.forbidden : result.status === 429 ? t.rateLimited : result.status >= 500 ? t.serviceError : result.message} retry={retry} retryLabel={t.retry} />
 
-  const { summary, byDefinition, disagreements } = result.data
+  const { sampling, summary, byDefinition, disagreements, disagreementPagination } = result.data
   const outcomeLabels = {
     VIOLATION: t.violation,
     NO_VIOLATION: t.noViolation,
@@ -51,17 +49,29 @@ export function QualityReport({ initial }: { initial: ApiResult<QualityReportRes
   const definitions = Array.isArray(byDefinition) ? byDefinition : []
   const recent = Array.isArray(disagreements) ? disagreements : []
   const metrics = [
-    [t.evaluatedSamples, summary.total],
+    [t.confidentAiItems, sampling.confidentAiItems],
+    [t.sampledItems, sampling.sampledItems],
+    [t.reviewedSamples, sampling.reviewedSamples],
+    [t.sampledPercentage, sampling.sampledPercentage === null ? t.noData : formatAgreementRate(sampling.sampledPercentage)],
+    [t.reviewedSamplePercentage, sampling.reviewedSamplePercentage === null ? t.noData : formatAgreementRate(sampling.reviewedSamplePercentage)],
+    [t.configuredSampleRate, formatAgreementRate(sampling.configuredSampleRate)],
+    [t.confidenceThreshold, formatAgreementRate(sampling.confidenceThreshold)],
     [t.agreements, summary.agreements],
     [t.disagreements, summary.disagreements],
     [t.agreementRate, summary.agreementRate === null ? t.noData : formatAgreementRate(summary.agreementRate)],
   ]
+  const pageHref = (page: number) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+    if (dateFrom) params.set("dateFrom", dateFrom)
+    if (dateTo) params.set("dateTo", dateTo)
+    return `/panel/quality?${params.toString()}`
+  }
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {metrics.map(([label, value], index) => (
-          <Card key={String(label)} className={index === 1 ? "border-emerald-500/30" : index === 2 ? "border-destructive/30" : ""}>
+          <Card key={String(label)} className={index === 7 ? "border-emerald-500/30" : index === 8 ? "border-destructive/30" : ""}>
             <CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl">{value}</CardTitle></CardHeader>
           </Card>
         ))}
@@ -96,7 +106,7 @@ export function QualityReport({ initial }: { initial: ApiResult<QualityReportRes
                   <TableCell><div>{row.definitionId}</div><div className="text-xs text-muted-foreground">{row.ruleId} · {row.field}</div></TableCell>
                   <TableCell><OutcomeBadge value={row.ai?.outcome ?? null} owner={t.ai} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell>{row.ai ? row.ai.confidence.toLocaleString(locale) : t.noData}</TableCell>
-                  <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div></TableCell>
+                  <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div>{row.ai?.reason && <div className="mt-1 max-w-72 whitespace-normal text-xs text-muted-foreground">{translatedReason(row.ai.reasonTranslations, locale) || row.ai.reason}</div>}</TableCell>
                   <TableCell><OutcomeBadge value={row.human?.outcome ?? null} owner={t.human} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell className="max-w-72 whitespace-normal">{row.human?.reason ?? t.noData}</TableCell>
                   <TableCell>{row.completedAt ? new Date(row.completedAt).toLocaleString(locale) : t.noData}</TableCell>
@@ -104,8 +114,14 @@ export function QualityReport({ initial }: { initial: ApiResult<QualityReportRes
               ))}</TableBody>
             </Table>
           ) : <p className="text-sm text-muted-foreground">{t.noDisagreements}</p>}
+          <div className="mt-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{disagreementPagination.total.toLocaleString(locale)} {t.disagreements} · {t.page} {disagreementPagination.page.toLocaleString(locale)} {t.of} {Math.max(1, disagreementPagination.totalPages).toLocaleString(locale)}</p><div className="flex gap-2"><Link href={disagreementPagination.hasPreviousPage ? pageHref(disagreementPagination.page - 1) : "#"} aria-disabled={!disagreementPagination.hasPreviousPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasPreviousPage && "pointer-events-none opacity-50")}>{t.previous}</Link><Link href={disagreementPagination.hasNextPage ? pageHref(disagreementPagination.page + 1) : "#"} aria-disabled={!disagreementPagination.hasNextPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasNextPage && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
         </CardContent>
       </Card>
     </div>
   )
+}
+
+function translatedReason(translations: Record<string, string> | null | undefined, locale: string) {
+  if (!translations) return ""
+  return translations[locale] || translations[locale === "fa" ? "prs" : locale] || ""
 }

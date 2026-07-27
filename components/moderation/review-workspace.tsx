@@ -4,7 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { CheckIcon, RefreshCwIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
-import { loadNextReview, submitEvaluation } from "@/app/panel/moderation-actions"
+import { acknowledgeReviewShown, loadNextReview, submitEvaluation } from "@/app/panel/moderation-actions"
 import { useI18n } from "@/components/providers"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,7 +59,11 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
   )
   const [outcome, setOutcome] = React.useState<HumanReviewOutcome | null>(null)
   const [reason, setReason] = React.useState("")
+  const [acknowledgement, setAcknowledgement] = React.useState<
+    { status: "idle" | "pending" | "acknowledged" | "failed" | "expired"; expiresAt: string | null }
+  >({ status: "idle", expiresAt: initial.ok && initial.data ? initial.data.leaseExpiresAt : null })
   const [pending, startTransition] = React.useTransition()
+  const acknowledgedReviewId = React.useRef<string | null>(null)
 
   const messageFor = React.useCallback((status: number, message: string) => {
     if (status === 401) return t.sessionExpired
@@ -70,6 +74,8 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
   }, [t])
 
   const refresh = React.useCallback(() => {
+    acknowledgedReviewId.current = null
+    setAcknowledgement({ status: "idle", expiresAt: null })
     startTransition(async () => {
       const next = await loadNextReview()
       if (!next.ok && next.status === 401) return router.replace("/login")
@@ -80,8 +86,49 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
     })
   }, [router])
 
+  const acknowledge = React.useCallback(async (reviewId: string) => {
+    setAcknowledgement((current) => ({ status: "pending", expiresAt: current.expiresAt }))
+    const response = await acknowledgeReviewShown(reviewId)
+    if (!response.ok) {
+      if (response.status === 401) {
+        router.replace("/login")
+        return
+      }
+      acknowledgedReviewId.current = null
+      setAcknowledgement((current) => ({ status: "failed", expiresAt: current.expiresAt }))
+      toast.error(t.acknowledgementFailed, {
+        description: messageFor(response.status, response.message) || t.acknowledgementFailedDescription,
+      })
+      return
+    }
+    setAcknowledgement({ status: "acknowledged", expiresAt: response.data.expiresAt })
+  }, [messageFor, router, t])
+
+  React.useEffect(() => {
+    const reviewId = result.ok ? result.data?.id : undefined
+    if (!reviewId || !currentItem || acknowledgedReviewId.current === reviewId) return
+    acknowledgedReviewId.current = reviewId
+    void acknowledge(reviewId)
+  }, [acknowledge, currentItem, result])
+
+  React.useEffect(() => {
+    if (acknowledgement.status !== "acknowledged" || !acknowledgement.expiresAt) return
+    const expiresAt = Date.parse(acknowledgement.expiresAt)
+    if (!Number.isFinite(expiresAt)) return
+    const markExpired = () => {
+      if (Date.now() >= expiresAt) {
+        acknowledgedReviewId.current = null
+        setAcknowledgement({ status: "expired", expiresAt: acknowledgement.expiresAt })
+      }
+    }
+    markExpired()
+    const timer = window.setInterval(markExpired, 1000)
+    return () => window.clearInterval(timer)
+  }, [acknowledgement])
+
   function submit() {
     if (!result.ok || !result.data || !currentItem || !outcome) return
+    if (acknowledgement.status !== "acknowledged") return
     if (currentItem.requiresReason && !reason.trim()) return
     if (outcome === "VIOLATION" && !window.confirm(t.confirmViolation)) return
     startTransition(async () => {
@@ -101,6 +148,10 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
         toast.success(t.reviewCompleted, { description: t.loadingNext })
         refresh()
       } else {
+        // Re-acknowledge after the next item is painted so the client receives
+        // the lease expiry that was extended by the successful submission.
+        acknowledgedReviewId.current = null
+        setAcknowledgement({ status: "idle", expiresAt: null })
         setCurrentItem(response.data.item)
         setOutcome(null)
         setReason("")
@@ -119,6 +170,7 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
   const itemIndex = Math.max(0, items.findIndex((item) => item.id === currentItem?.id))
   const relevant = currentItem ? relevantValue(post, currentItem.field) : undefined
   const displayedImages = currentItem && isImageField(currentItem.field) ? images : images.slice(0, 1)
+  const canSubmit = acknowledgement.status === "acknowledged"
 
   return (
     <div className="grid w-full items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
@@ -169,10 +221,27 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
         <CardContent className="space-y-5">
           {currentItem ? (
             <>
+              {acknowledgement.status === "failed" && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <p className="font-medium text-destructive">{t.acknowledgementFailed}</p>
+                  <p className="mt-1 text-muted-foreground">{t.acknowledgementFailedDescription}</p>
+                  <Button className="mt-3" size="sm" variant="outline" onClick={() => acknowledge(result.data!.id)}>
+                    <RefreshCwIcon />{t.retry}
+                  </Button>
+                </div>
+              )}
+              {acknowledgement.status === "expired" && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <p className="font-medium text-destructive">{t.leaseExpired}</p>
+                  <Button className="mt-3" size="sm" variant="outline" onClick={refresh}>
+                    <RefreshCwIcon />{t.refresh}
+                  </Button>
+                </div>
+              )}
               <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${items.length ? ((itemIndex + 1) / items.length) * 100 : 0}%` }} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <Button variant={outcome === "VIOLATION" ? "default" : "outline"} onClick={() => setOutcome("VIOLATION")}><CheckIcon />{t.yes}</Button>
-                <Button variant={outcome === "NO_VIOLATION" ? "default" : "outline"} onClick={() => setOutcome("NO_VIOLATION")}><XIcon />{t.no}</Button>
+                <Button disabled={!canSubmit || pending} variant={outcome === "VIOLATION" ? "default" : "outline"} onClick={() => setOutcome("VIOLATION")}><CheckIcon />{t.yes}</Button>
+                <Button disabled={!canSubmit || pending} variant={outcome === "NO_VIOLATION" ? "default" : "outline"} onClick={() => setOutcome("NO_VIOLATION")}><XIcon />{t.no}</Button>
               </div>
               {currentItem.requiresReason && (
                 <div className="space-y-2">
@@ -181,7 +250,9 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
                   <div className="text-end text-xs text-muted-foreground">{reason.length}/1000</div>
                 </div>
               )}
-              <Button className="w-full" onClick={submit} disabled={pending || !outcome || Boolean(currentItem.requiresReason && !reason.trim())}>{pending ? t.submitting : t.submit}</Button>
+              <Button className="w-full" onClick={submit} disabled={!canSubmit || pending || !outcome || Boolean(currentItem.requiresReason && !reason.trim())}>
+                {acknowledgement.status === "pending" || acknowledgement.status === "idle" ? t.acknowledgingReview : pending ? t.submitting : t.submit}
+              </Button>
             </>
           ) : <p className="text-muted-foreground">{t.noActionableItems}</p>}
         </CardContent>

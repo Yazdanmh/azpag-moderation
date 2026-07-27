@@ -60,8 +60,15 @@ export interface ModerationPostSnapshot {
 
 export interface ModerationReview {
   id: string
+  leaseExpiresAt: string | null
   post: ModerationPostSnapshot
   items: ModerationReviewItem[]
+}
+
+export interface ModerationReviewShownAcknowledgement {
+  acknowledged: true
+  shownAt: string
+  expiresAt: string
 }
 
 export interface SubmitHumanEvaluationRequest {
@@ -100,6 +107,8 @@ export interface QualityDisagreement {
     confidence: number
     model: string | null
     promptVersion: string | null
+    reason?: string | null
+    reasonTranslations?: Record<string, string> | null
   } | null
   human: {
     outcome: EvaluationOutcome
@@ -109,9 +118,89 @@ export interface QualityDisagreement {
 }
 
 export interface QualityReportResponse {
+  range: {
+    dateFrom: string | null
+    dateTo: string | null
+    field: string
+  }
+  sampling: {
+    confidentAiItems: number
+    sampledItems: number
+    reviewedSamples: number
+    sampledPercentage: number | null
+    reviewedSamplePercentage: number | null
+    configuredSampleRate: number
+    confidenceThreshold: number
+  }
   summary: QualitySummary
   byDefinition: QualityDefinitionMetric[]
   disagreements: QualityDisagreement[]
+  disagreementPagination: Pagination
+}
+
+export interface Pagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface ModerationMetricsQuery {
+  dateFrom?: string
+  dateTo?: string
+}
+
+export interface ModerationQualityQuery extends ModerationMetricsQuery {
+  page?: number
+  pageSize?: number
+}
+
+export interface DurationDistribution {
+  count: number
+  medianMs: number | null
+  p90Ms: number | null
+  p95Ms: number | null
+}
+
+export interface ModerationQueueMetrics {
+  generatedAt: string
+  waitingReviews: number
+  oldestReviewId: string | null
+  oldestPostId: string | null
+  oldestQueuedAt: string | null
+  oldestWaitingMs: number | null
+}
+
+export interface ModerationOperationalMetrics {
+  range: {
+    dateFrom: string | null
+    dateTo: string | null
+    field: string
+  }
+  volume: {
+    completedReviews: number
+    aiOnlyReviews: number
+    aiOnlyPercentage: number | null
+    humanParticipationReviews: number
+    humanParticipationPercentage: number | null
+  }
+  timing: {
+    totalReviewTime: DurationDistribution
+    humanQueueWaitTime: DurationDistribution
+    humanActiveWorkTime: DurationDistribution
+  }
+  decisions: Array<{
+    decision: ModerationDecision
+    count: number
+    percentage: number | null
+  }>
+  reviewers: Array<{
+    reviewer: ModerationPerson
+    reviewCount: number
+    activeWorkTime: DurationDistribution
+  }>
 }
 
 export interface ApiError {
@@ -277,13 +366,7 @@ export interface ModerationReviewListItem {
 
 export interface ModerationReviewsResponse {
   data: ModerationReviewListItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-    hasNextPage: boolean
-    hasPreviousPage: boolean
+  pagination: Pagination & {
     page_size?: number
     total_count?: number
     total_pages?: number
