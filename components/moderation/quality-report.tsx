@@ -38,7 +38,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
   }
 
   if (pending && !result.ok) return <ModerationLoading />
-  if (!result.ok) return <ResultState title={t.unableQuality} description={result.status === 401 ? t.sessionExpired : result.status === 403 ? t.forbidden : result.status === 429 ? t.rateLimited : result.status >= 500 ? t.serviceError : result.message} retry={retry} retryLabel={t.retry} />
+  if (!result.ok) return <ResultState title={t.unableQuality} description={result.status === 401 ? t.sessionExpired : result.status === 403 ? t.forbidden : result.status === 429 ? t.rateLimited : result.status >= 500 ? t.serviceError : result.message} retry={retry} retryLabel={t.retry} fill />
 
   const { sampling, summary, byDefinition, disagreements, disagreementPagination } = result.data
   const outcomeLabels = {
@@ -48,6 +48,10 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
   }
   const definitions = Array.isArray(byDefinition) ? byDefinition : []
   const recent = Array.isArray(disagreements) ? disagreements : []
+  const hasQualityData = sampling.confidentAiItems > 0 || sampling.sampledItems > 0 || summary.total > 0 || definitions.length > 0 || recent.length > 0
+  if (!hasQualityData) {
+    return <ResultState title={t.noQualityData} description={t.noQualityDataDescription} retry={retry} retryLabel={t.retry} fill />
+  }
   const metrics = [
     [t.confidentAiItems, sampling.confidentAiItems],
     [t.sampledItems, sampling.sampledItems],
@@ -91,7 +95,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
                 </TableRow>
               ))}</TableBody>
             </Table>
-          ) : <p className="text-sm text-muted-foreground">{t.noMetrics}</p>}
+          ) : <ResultState title={t.noMetrics} description={t.metricsDescription} />}
         </CardContent>
       </Card>
       <Card>
@@ -113,7 +117,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
                 </TableRow>
               ))}</TableBody>
             </Table>
-          ) : <p className="text-sm text-muted-foreground">{t.noDisagreements}</p>}
+          ) : <ResultState title={t.noDisagreements} description={t.disagreementsDescription} />}
           <div className="mt-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{disagreementPagination.total.toLocaleString(locale)} {t.disagreements} · {t.page} {disagreementPagination.page.toLocaleString(locale)} {t.of} {Math.max(1, disagreementPagination.totalPages).toLocaleString(locale)}</p><div className="flex gap-2"><Link href={disagreementPagination.hasPreviousPage ? pageHref(disagreementPagination.page - 1) : "#"} aria-disabled={!disagreementPagination.hasPreviousPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasPreviousPage && "pointer-events-none opacity-50")}>{t.previous}</Link><Link href={disagreementPagination.hasNextPage ? pageHref(disagreementPagination.page + 1) : "#"} aria-disabled={!disagreementPagination.hasNextPage} className={cn(buttonVariants({ variant: "outline" }), !disagreementPagination.hasNextPage && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
         </CardContent>
       </Card>

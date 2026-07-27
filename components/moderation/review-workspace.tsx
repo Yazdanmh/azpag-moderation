@@ -161,7 +161,7 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
   }
 
   if (pending && (!result.ok || !result.data)) return <ModerationLoading />
-  if (!result.ok) return <ResultState title={t.unableReviews} description={messageFor(result.status, result.message)} retry={refresh} retryLabel={t.retry} />
+  if (!result.ok) return <ResultState title={t.unableReviews} description={messageFor(result.status, result.message)} retry={refresh} retryLabel={t.retry} fill />
   if (!result.data) return <ResultState title={t.noReviews} description={t.noReviewsDescription} retry={refresh} retryLabel={t.retry} fill />
 
   const { post } = result.data

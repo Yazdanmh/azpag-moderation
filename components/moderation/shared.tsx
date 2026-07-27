@@ -1,6 +1,10 @@
+"use client"
+
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { AlertCircleIcon, RefreshCwIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function ModerationLoading() {
@@ -20,60 +24,48 @@ export function ResultState({
   description,
   retry,
   retryLabel = "Retry",
+  actionHref,
   fill = false,
 }: {
   title: string
   description: string
-  retry?: () => void
+  retry?: (() => void) | true
   retryLabel?: string
+  actionHref?: string
   fill?: boolean
 }) {
-  if (fill) {
-    return (
-      <Card className="min-h-[calc(100vh-var(--header-height)-9rem)] w-full">
-        <CardContent className="flex flex-1 items-center justify-center p-6">
-          <div className="flex max-w-md flex-col items-center text-center">
-            <div className="relative mb-5 grid size-16 place-items-center">
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 animate-spin rounded-full border-2 border-dashed border-primary/70 motion-reduce:animate-none"
-                style={{ animationDuration: "3s" }}
-              />
-              <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-                <AlertCircleIcon className="size-7" />
-              </span>
-            </div>
-            <CardTitle className="text-xl">{title}</CardTitle>
-            <CardDescription className="mt-2">{description}</CardDescription>
-            {retry && (
-              <Button className="mt-6" onClick={retry}>
-                <RefreshCwIcon />
-                {retryLabel}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  const router = useRouter()
+  const retryAction = retry === true ? () => router.refresh() : retry
 
   return (
-    <Card className="mx-auto w-full max-w-xl">
-      <CardHeader className="items-center text-center">
-        <div className="mb-2 grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-          <AlertCircleIcon className="size-6" />
+    <Card className={fill ? "min-h-[calc(100vh-var(--header-height)-9rem)] w-full" : "w-full"}>
+      <CardContent className={`flex flex-1 items-center justify-center p-6 ${fill ? "" : "min-h-64"}`}>
+        <div className="flex max-w-md flex-col items-center text-center">
+          <div className="relative mb-5 grid size-16 place-items-center">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 animate-spin rounded-full border-2 border-dashed border-primary/70 motion-reduce:animate-none"
+              style={{ animationDuration: "3s" }}
+            />
+            <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+              <AlertCircleIcon className="size-7" />
+            </span>
+          </div>
+          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardDescription className="mt-2">{description}</CardDescription>
+          {(retryAction || actionHref) && (
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {retryAction && (
+                <Button onClick={retryAction}>
+                  <RefreshCwIcon />
+                  {retryLabel}
+                </Button>
+              )}
+              {actionHref && !retryAction && <Link href={actionHref} className={buttonVariants()}>{retryLabel}</Link>}
+            </div>
+          )}
         </div>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      {retry && (
-        <CardContent className="flex justify-center">
-          <Button onClick={retry}>
-            <RefreshCwIcon />
-            {retryLabel}
-          </Button>
-        </CardContent>
-      )}
+      </CardContent>
     </Card>
   )
 }

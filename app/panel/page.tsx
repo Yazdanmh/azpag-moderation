@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { BotIcon, BrainCircuitIcon, FileCheck2Icon, ListTodoIcon, UsersIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ResultState } from "@/components/moderation/shared"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -52,7 +53,11 @@ export default async function DashboardPage({
       redirect("/login")
     }
     const message = error instanceof ModerationApiError ? error.message : t.loadError
-    return <main className="p-4 md:p-6"><Card><CardHeader><CardTitle>{t.loadError}</CardTitle></CardHeader><CardContent>{message}</CardContent></Card></main>
+    return (
+      <main className="flex flex-1 p-4 md:p-6">
+        <ResultState title={t.loadError} description={message} retry retryLabel={t.refresh} fill />
+      </main>
+    )
   }
 
   const { queue, operations } = data
@@ -63,6 +68,7 @@ export default async function DashboardPage({
     { label: t.humanParticipation, value: percentage(operations.volume.humanParticipationPercentage, locale, t.noData), description: `${number(operations.volume.humanParticipationReviews, locale)} ${t.reviews}`, icon: UsersIcon },
   ]
   const decisionMap = new Map(operations.decisions.map((item) => [item.decision, item]))
+  const hasOperationalData = queue.waitingReviews > 0 || operations.volume.completedReviews > 0
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
@@ -78,6 +84,9 @@ export default async function DashboardPage({
         </CardContent>
       </Card>
 
+      {!hasOperationalData ? (
+        <ResultState title={t.noOperationsData} description={t.noOperationsDataDescription} fill />
+      ) : <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {volumeCards.map(({ label, value, description, icon: Icon }) => (
           <Card key={label}>
@@ -121,9 +130,10 @@ export default async function DashboardPage({
               <TableHeader><TableRow><TableHead>{t.reviewer}</TableHead><TableHead>{t.completedReviews}</TableHead><TableHead>{t.sampleSize}</TableHead><TableHead>{t.median}</TableHead><TableHead>{t.p90}</TableHead><TableHead>{t.p95}</TableHead></TableRow></TableHeader>
               <TableBody>{operations.reviewers.map((row) => <ReviewerRow key={row.reviewer.id} reviewer={row.reviewer} count={row.reviewCount} timing={row.activeWorkTime} locale={locale} t={t} />)}</TableBody>
             </Table>
-          ) : <div className="py-10 text-center text-muted-foreground">{t.noReviewerMetrics}</div>}
+          ) : <ResultState title={t.noReviewerMetrics} description={t.reviewerPerformanceDescription} />}
         </CardContent>
       </Card>
+      </>}
     </main>
   )
 }

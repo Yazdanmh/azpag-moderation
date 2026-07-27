@@ -2,10 +2,11 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { BotIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ReviewToolbar } from "@/components/moderation/review-toolbar"
+import { ResultState } from "@/components/moderation/shared"
 import { StatusBadge, personName } from "@/components/moderation/review-badges"
 import { getModerationReviews, ModerationApiError } from "@/lib/moderation-api"
 import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation-types"
@@ -82,7 +83,11 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
       redirect("/login")
     }
     const message = error instanceof ModerationApiError ? error.message : t.loadError
-    return <main className="p-4 md:p-6"><Card><CardHeader><CardTitle>{t.loadError}</CardTitle></CardHeader><CardContent>{message}</CardContent></Card></main>
+    return (
+      <main className="flex flex-1 p-4 md:p-6">
+        <ResultState title={t.loadError} description={message} retry retryLabel={t.refresh} fill />
+      </main>
+    )
   }
   const rows = Array.isArray(response.data) ? response.data : []
   const pagination = response.pagination
@@ -113,12 +118,16 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
           { name: "sort", value: query.sort, label: t.newest, values: sorts },
         ]}
       />
+      {!rows.length ? (
+        <ResultState title={t.noMatches} description={t.filtersDescription} actionHref="/panel/reviews" retryLabel={t.clear} fill />
+      ) : <>
       <Card><CardContent>{rows.length ? <Table><TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.review}</TableHead><TableHead>{t.status}</TableHead><TableHead>{t.decision}</TableHead><TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead><TableHead>{t.queued}</TableHead></TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
         <TableCell className="min-w-72 whitespace-normal"><div className="flex items-start gap-3">{review.post.images?.[0]?.url && <div className="size-14 shrink-0 overflow-hidden rounded-md border bg-muted"><img src={postImageUrl(review.post.images[0])} alt="" className="size-full object-cover" /></div>}<div><Link className="font-medium hover:text-primary" href={`/panel/posts/${review.post.id}`}>{review.post.title}</Link><div className="mt-1 flex flex-wrap gap-1"><StatusBadge value={review.post.status} /></div><div className="mt-1 text-xs text-muted-foreground">{personName(review.post.author)}<br />{review.post.id} · {t.revision} {review.postRevision}</div></div></div></TableCell>
         <TableCell><Link className="text-primary hover:underline" href={`/panel/reviews/${review.id}`}>{review.type.replaceAll("_", " ")}</Link></TableCell><TableCell><StatusBadge value={review.status} /></TableCell><TableCell><StatusBadge value={review.finalDecision} /></TableCell>
         <TableCell className="whitespace-normal"><Reviewer reviewer={review.assignment?.reviewer} aiLabel={t.reviewedByAi} /></TableCell><TableCell className="min-w-64 whitespace-normal text-xs">{t.total} {review.itemSummary?.total ?? 0} · {t.violations} {review.itemSummary?.violations ?? 0} · {t.uncertain} {review.itemSummary?.uncertain ?? 0} · {t.human} {review.itemSummary?.humanReviewed ?? 0}<br />{t.quality} ✓ {review.itemSummary?.qualityAgreements ?? 0} / ✕ {review.itemSummary?.qualityDisagreements ?? 0}</TableCell><TableCell>{new Date(review.queuedAt).toLocaleString(locale)}</TableCell>
       </TableRow>)}</TableBody></Table> : <div className="py-12 text-center text-muted-foreground">{t.noMatches}</div>}</CardContent></Card>
       <div className="flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{total} {t.reviews} · {t.page} {pagination?.page ?? page} {t.of} {Math.max(1, totalPages)}</p><div className="flex gap-2"><Link aria-disabled={page <= 1} tabIndex={page <= 1 ? -1 : undefined} href={page > 1 ? pageHref(page - 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page <= 1 && "pointer-events-none opacity-50")}>{t.previous}</Link><Link aria-disabled={page >= totalPages} tabIndex={page >= totalPages ? -1 : undefined} href={page < totalPages ? pageHref(page + 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page >= totalPages && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
+      </>}
     </main>
   )
 }
