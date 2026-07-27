@@ -14,6 +14,7 @@ export default async function PanelLayout({
 
   return (
     <SidebarProvider
+      className="max-w-full overflow-x-hidden"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 64)",
@@ -30,7 +31,7 @@ export default async function PanelLayout({
         }}
         variant="inset"
       />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 max-w-full overflow-x-hidden">
         <SiteHeader />
         {children}
       </SidebarInset>

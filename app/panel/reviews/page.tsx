@@ -84,7 +84,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     }
     const message = error instanceof ModerationApiError ? error.message : t.loadError
     return (
-      <main className="flex flex-1 p-4 md:p-6">
+      <main className="flex h-[calc(100svh-var(--header-height))] w-full min-w-0 max-w-full flex-1 overflow-hidden p-4 md:p-6">
         <ResultState title={t.loadError} description={message} retry retryLabel={t.refresh} fill />
       </main>
     )
@@ -102,9 +102,9 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
   const localizedValue = (value: string | null | undefined) =>
     value ? optionLabels[value] ?? value.replaceAll("_", " ") : undefined
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">{t.archive}</h1><p className="text-muted-foreground">{t.archiveDescription}</p></div><Link href="/panel/reviews/next" className={buttonVariants()}>{t.workspace}</Link></div>
-      <ReviewToolbar
+    <main className="flex h-[calc(100svh-var(--header-height))] w-full min-w-0 max-w-full flex-1 flex-col gap-4 overflow-hidden p-4 md:p-6">
+      <div className="flex min-w-0 shrink-0 flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h1 className="text-2xl font-semibold">{t.archive}</h1><p className="break-words text-muted-foreground">{t.archiveDescription}</p></div><Link href="/panel/reviews/next" className={buttonVariants()}>{t.workspace}</Link></div>
+      <div className="w-full min-w-0 shrink-0"><ReviewToolbar
         query={query.query}
         pageSize={pageSize}
         reviewerId={query.reviewerId}
@@ -119,17 +119,17 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
           { name: "postStatus", value: query.postStatus, label: t.allPostStatuses, values: postStatuses },
           { name: "sort", value: query.sort, label: t.newest, values: sorts },
         ]}
-      />
+      /></div>
       {!rows.length ? (
         <ResultState title={t.noMatches} description={t.filtersDescription} actionHref="/panel/reviews" retryLabel={t.clear} fill />
-      ) : <>
-      <Card><CardContent>{rows.length ? <Table><TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.review}</TableHead><TableHead>{t.status}</TableHead><TableHead>{t.decision}</TableHead><TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead><TableHead>{t.queued}</TableHead></TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
+      ) : <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+      <Card className="min-h-0 min-w-0 max-w-full flex-1 overflow-hidden"><CardContent className="h-full min-w-0 overflow-hidden"><div className="h-full w-full min-w-0 overflow-auto overscroll-contain">{rows.length ? <Table><TableHeader className="sticky top-0 z-10 bg-card"><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.review}</TableHead><TableHead>{t.status}</TableHead><TableHead>{t.decision}</TableHead><TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead><TableHead>{t.queued}</TableHead></TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
         <TableCell className="min-w-80 whitespace-normal"><PostSummary review={review} locale={locale} labels={t} /></TableCell>
         <TableCell><Link className="text-primary hover:underline" href={`/panel/reviews/${review.id}`}>{localizedValue(review.type)}</Link></TableCell><TableCell><StatusBadge value={review.status} label={localizedValue(review.status)} /></TableCell><TableCell><StatusBadge value={review.finalDecision} label={localizedValue(review.finalDecision)} /></TableCell>
         <TableCell className="whitespace-normal"><Reviewer reviewer={review.assignment?.reviewer} aiLabel={t.reviewedByAi} /></TableCell><TableCell className="min-w-56 whitespace-normal"><ItemSummary summary={review.itemSummary} locale={locale} labels={t} /></TableCell><TableCell className="min-w-44 whitespace-normal"><QueuedAt value={review.queuedAt} locale={locale} /></TableCell>
-      </TableRow>)}</TableBody></Table> : <div className="py-12 text-center text-muted-foreground">{t.noMatches}</div>}</CardContent></Card>
-      <div className="flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{total} {t.reviews} · {t.page} {pagination?.page ?? page} {t.of} {Math.max(1, totalPages)}</p><div className="flex gap-2"><Link aria-disabled={page <= 1} tabIndex={page <= 1 ? -1 : undefined} href={page > 1 ? pageHref(page - 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page <= 1 && "pointer-events-none opacity-50")}>{t.previous}</Link><Link aria-disabled={page >= totalPages} tabIndex={page >= totalPages ? -1 : undefined} href={page < totalPages ? pageHref(page + 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page >= totalPages && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
-      </>}
+      </TableRow>)}</TableBody></Table> : <div className="py-12 text-center text-muted-foreground">{t.noMatches}</div>}</div></CardContent></Card>
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="min-w-0 text-sm text-muted-foreground">{total} {t.reviews} · {t.page} {pagination?.page ?? page} {t.of} {Math.max(1, totalPages)}</p><div className="flex gap-2"><Link aria-disabled={page <= 1} tabIndex={page <= 1 ? -1 : undefined} href={page > 1 ? pageHref(page - 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page <= 1 && "pointer-events-none opacity-50")}>{t.previous}</Link><Link aria-disabled={page >= totalPages} tabIndex={page >= totalPages ? -1 : undefined} href={page < totalPages ? pageHref(page + 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page >= totalPages && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
+      </div>}
     </main>
   )
 }

@@ -55,8 +55,8 @@ export function ReviewToolbar({
     + (reviewerId ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      <form className="relative flex-1">
+    <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row">
+      <form className="relative min-w-0 flex-1">
         <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input name="query" defaultValue={query} placeholder={labels.search} className="pe-24 ps-9" />
         <input type="hidden" name="pageSize" value={pageSize} />
@@ -69,7 +69,7 @@ export function ReviewToolbar({
         </Button>
       </form>
 
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <Button
           type="button"
           variant="outline"
