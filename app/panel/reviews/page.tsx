@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { BotIcon } from "lucide-react"
+import { BotIcon, Clock3Icon, ImageIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,7 +12,7 @@ import { getModerationReviews, ModerationApiError } from "@/lib/moderation-api"
 import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation-types"
 import { deleteSession, getSession } from "@/lib/session"
 import { cookies } from "next/headers"
-import { isLocale } from "@/lib/i18n"
+import { isLocale, type Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
 import { cn } from "@/lib/utils"
 import { paginationTotal, paginationTotalPages } from "@/lib/moderation-utils"
@@ -99,6 +99,8 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     next.set("page", String(target))
     return `/panel/reviews?${next.toString()}`
   }
+  const localizedValue = (value: string | null | undefined) =>
+    value ? optionLabels[value] ?? value.replaceAll("_", " ") : undefined
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">{t.archive}</h1><p className="text-muted-foreground">{t.archiveDescription}</p></div><Link href="/panel/reviews/next" className={buttonVariants()}>{t.workspace}</Link></div>
@@ -122,9 +124,9 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
         <ResultState title={t.noMatches} description={t.filtersDescription} actionHref="/panel/reviews" retryLabel={t.clear} fill />
       ) : <>
       <Card><CardContent>{rows.length ? <Table><TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.review}</TableHead><TableHead>{t.status}</TableHead><TableHead>{t.decision}</TableHead><TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead><TableHead>{t.queued}</TableHead></TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
-        <TableCell className="min-w-72 whitespace-normal"><div className="flex items-start gap-3">{review.post.images?.[0]?.url && <div className="size-14 shrink-0 overflow-hidden rounded-md border bg-muted"><img src={postImageUrl(review.post.images[0])} alt="" className="size-full object-cover" /></div>}<div><Link className="font-medium hover:text-primary" href={`/panel/posts/${review.post.id}`}>{review.post.title}</Link><div className="mt-1 flex flex-wrap gap-1"><StatusBadge value={review.post.status} /></div><div className="mt-1 text-xs text-muted-foreground">{personName(review.post.author)}<br />{review.post.id} · {t.revision} {review.postRevision}</div></div></div></TableCell>
-        <TableCell><Link className="text-primary hover:underline" href={`/panel/reviews/${review.id}`}>{review.type.replaceAll("_", " ")}</Link></TableCell><TableCell><StatusBadge value={review.status} /></TableCell><TableCell><StatusBadge value={review.finalDecision} /></TableCell>
-        <TableCell className="whitespace-normal"><Reviewer reviewer={review.assignment?.reviewer} aiLabel={t.reviewedByAi} /></TableCell><TableCell className="min-w-64 whitespace-normal text-xs">{t.total} {review.itemSummary?.total ?? 0} · {t.violations} {review.itemSummary?.violations ?? 0} · {t.uncertain} {review.itemSummary?.uncertain ?? 0} · {t.human} {review.itemSummary?.humanReviewed ?? 0}<br />{t.quality} ✓ {review.itemSummary?.qualityAgreements ?? 0} / ✕ {review.itemSummary?.qualityDisagreements ?? 0}</TableCell><TableCell>{new Date(review.queuedAt).toLocaleString(locale)}</TableCell>
+        <TableCell className="min-w-80 whitespace-normal"><PostSummary review={review} locale={locale} labels={t} /></TableCell>
+        <TableCell><Link className="text-primary hover:underline" href={`/panel/reviews/${review.id}`}>{localizedValue(review.type)}</Link></TableCell><TableCell><StatusBadge value={review.status} label={localizedValue(review.status)} /></TableCell><TableCell><StatusBadge value={review.finalDecision} label={localizedValue(review.finalDecision)} /></TableCell>
+        <TableCell className="whitespace-normal"><Reviewer reviewer={review.assignment?.reviewer} aiLabel={t.reviewedByAi} /></TableCell><TableCell className="min-w-56 whitespace-normal"><ItemSummary summary={review.itemSummary} locale={locale} labels={t} /></TableCell><TableCell className="min-w-44 whitespace-normal"><QueuedAt value={review.queuedAt} locale={locale} /></TableCell>
       </TableRow>)}</TableBody></Table> : <div className="py-12 text-center text-muted-foreground">{t.noMatches}</div>}</CardContent></Card>
       <div className="flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{total} {t.reviews} · {t.page} {pagination?.page ?? page} {t.of} {Math.max(1, totalPages)}</p><div className="flex gap-2"><Link aria-disabled={page <= 1} tabIndex={page <= 1 ? -1 : undefined} href={page > 1 ? pageHref(page - 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page <= 1 && "pointer-events-none opacity-50")}>{t.previous}</Link><Link aria-disabled={page >= totalPages} tabIndex={page >= totalPages ? -1 : undefined} href={page < totalPages ? pageHref(page + 1) : "#"} className={cn(buttonVariants({ variant: "outline" }), page >= totalPages && "pointer-events-none opacity-50")}>{t.next}</Link></div></div>
       </>}
@@ -135,6 +137,91 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
 function postImageUrl(image: ModerationReviewListItem["post"]["images"][number]) {
   if (typeof image.thumbnail === "string") return image.thumbnail
   return image.thumbnail?.url || image.url
+}
+
+function PostSummary({ review, locale, labels }: { review: ModerationReviewListItem; locale: Locale; labels: typeof moderationHistoryDictionaries.en }) {
+  const image = review.post.images?.[0]
+  const author = review.post.author
+  const authorName = personName(author)
+  const authorImage = author ? reviewerAvatarUrl(author) : ""
+  const initials = authorName === "—" ? "?" : authorName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted text-muted-foreground">
+        {image ? <img src={postImageUrl(image)} alt={review.post.title} className="size-full object-cover" /> : <ImageIcon className="size-5" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <Link className="font-medium hover:text-primary" href={`/panel/posts/${review.post.id}`}>{review.post.title}</Link>
+        <div className="mt-1.5 flex items-center gap-2">
+          <Avatar className="size-7">
+            {authorImage && <AvatarImage src={authorImage} alt={authorName} />}
+            <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 text-xs">
+            <div className="font-medium text-foreground">{authorName}</div>
+            {author?.email && <div className="break-all text-muted-foreground">{author.email}</div>}
+          </div>
+        </div>
+        <div className="mt-2">
+          <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">{labels.revision} {review.postRevision.toLocaleString(locale)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ItemSummary({ summary, locale, labels }: { summary: ModerationReviewListItem["itemSummary"]; locale: Locale; labels: typeof moderationHistoryDictionaries.en }) {
+  const qualityAgreements = summary?.qualityAgreements ?? 0
+  const qualityDisagreements = summary?.qualityDisagreements ?? 0
+  const hasQuality = qualityAgreements > 0 || qualityDisagreements > 0
+
+  return (
+    <div className="space-y-1.5 text-xs">
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        <span className="text-muted-foreground">{labels.total} <strong className="text-foreground">{(summary?.total ?? 0).toLocaleString(locale)}</strong></span>
+        <span className="text-muted-foreground">{labels.violations} <strong className="text-destructive">{(summary?.violations ?? 0).toLocaleString(locale)}</strong></span>
+        <span className="text-muted-foreground">{labels.uncertain} <strong className="text-foreground">{(summary?.uncertain ?? 0).toLocaleString(locale)}</strong></span>
+        <span className="text-muted-foreground">{labels.human} <strong className="text-foreground">{(summary?.humanReviewed ?? 0).toLocaleString(locale)}</strong></span>
+      </div>
+      {hasQuality && <div className="text-muted-foreground">{labels.quality}: <span className="text-emerald-700">✓ {qualityAgreements.toLocaleString(locale)}</span> · <span className="text-destructive">✕ {qualityDisagreements.toLocaleString(locale)}</span></div>}
+    </div>
+  )
+}
+
+function QueuedAt({ value, locale }: { value: string; locale: Locale }) {
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return <span className="text-muted-foreground">—</span>
+
+  return (
+    <time dateTime={value} className="flex items-start gap-2">
+      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-[#F5F5F5] text-primary">
+        <Clock3Icon className="size-3.5" />
+      </span>
+      <span>
+        <span className="block text-sm font-medium">{relativeDate(date, locale)}</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          {date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}
+        </span>
+      </span>
+    </time>
+  )
+}
+
+function relativeDate(date: Date, locale: Locale) {
+  const seconds = Math.round((date.getTime() - Date.now()) / 1000)
+  const absoluteSeconds = Math.abs(seconds)
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
+  if (absoluteSeconds < 60) return formatter.format(seconds, "second")
+  const minutes = Math.round(seconds / 60)
+  if (Math.abs(minutes) < 60) return formatter.format(minutes, "minute")
+  const hours = Math.round(minutes / 60)
+  if (Math.abs(hours) < 24) return formatter.format(hours, "hour")
+  const days = Math.round(hours / 24)
+  if (Math.abs(days) < 30) return formatter.format(days, "day")
+  const months = Math.round(days / 30)
+  if (Math.abs(months) < 12) return formatter.format(months, "month")
+  return formatter.format(Math.round(months / 12), "year")
 }
 
 function Reviewer({ reviewer, aiLabel }: { reviewer: ModerationPerson | null | undefined; aiLabel: string }) {
