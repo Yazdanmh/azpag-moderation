@@ -2,10 +2,9 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { BotIcon, BrainCircuitIcon, FileCheck2Icon, ListTodoIcon, UsersIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DateRangeDialog } from "@/components/moderation/date-range-dialog"
 import { ResultState } from "@/components/moderation/shared"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { isLocale, type Locale } from "@/lib/i18n"
 import {
@@ -72,17 +71,23 @@ export default async function DashboardPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div><h1 className="text-2xl font-semibold">{t.operationsDashboard}</h1><p className="text-muted-foreground">{t.operationsDescription}</p></div>
-
-      <Card>
-        <CardContent>
-          <form className="flex flex-wrap items-end gap-3">
-            <label className="grid gap-2 text-sm"><span>{t.from}</span><Input name="dateFrom" type="date" defaultValue={dateFrom?.slice(0, 10)} /></label>
-            <label className="grid gap-2 text-sm"><span>{t.to}</span><Input name="dateTo" type="date" defaultValue={dateTo?.slice(0, 10)} /></label>
-            <Button type="submit">{t.apply}</Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><h1 className="text-2xl font-semibold">{t.operationsDashboard}</h1><p className="text-muted-foreground">{t.operationsDescription}</p></div>
+        <DateRangeDialog
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          clearHref="/panel"
+          labels={{
+            trigger: t.dateRange,
+            title: t.dateRange,
+            description: t.dateRangeDescription,
+            from: t.from,
+            to: t.to,
+            apply: t.apply,
+            clear: t.clear,
+          }}
+        />
+      </div>
 
       {!hasOperationalData ? (
         <ResultState title={t.noOperationsData} description={t.noOperationsDataDescription} fill />

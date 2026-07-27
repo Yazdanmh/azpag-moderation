@@ -6,9 +6,7 @@ import { getSession } from "@/lib/session"
 import { cookies } from "next/headers"
 import { isLocale } from "@/lib/i18n"
 import { moderationDictionaries } from "@/lib/moderation-i18n"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { DateRangeDialog } from "@/components/moderation/date-range-dialog"
 
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
 
@@ -46,11 +44,27 @@ export default async function QualityPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t.qualityTitle}</h1>
-        <p className="text-muted-foreground">{t.qualitySubtitle}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.qualityTitle}</h1>
+          <p className="text-muted-foreground">{t.qualitySubtitle}</p>
+        </div>
+        <DateRangeDialog
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          clearHref="/panel/quality"
+          hiddenFields={{ pageSize }}
+          labels={{
+            trigger: t.dateRange,
+            title: t.dateRange,
+            description: t.dateRangeDescription,
+            from: t.dateFrom,
+            to: t.dateTo,
+            apply: t.applyRange,
+            clear: t.clearRange,
+          }}
+        />
       </div>
-      <Card><CardContent><form className="flex flex-wrap items-end gap-3"><label className="grid gap-2 text-sm"><span>{t.dateFrom}</span><Input name="dateFrom" type="date" defaultValue={dateFrom?.slice(0, 10)} /></label><label className="grid gap-2 text-sm"><span>{t.dateTo}</span><Input name="dateTo" type="date" defaultValue={dateTo?.slice(0, 10)} /></label><input type="hidden" name="pageSize" value={pageSize} /><Button type="submit">{t.applyRange}</Button></form></CardContent></Card>
       <QualityReport initial={initial} dateFrom={dateFrom} dateTo={dateTo} pageSize={pageSize} />
     </main>
   )
