@@ -103,7 +103,7 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
                     {item.isQualitySample && <div className="rounded-md border p-3 text-sm"><p className="font-medium">{copy.qualityCheck}</p><p className="mt-1 text-muted-foreground">{item.qualityAgreement === true ? copy.qualityAgreed : item.qualityAgreement === false ? copy.qualityDisagreed : copy.qualityPending}</p></div>}
                     <details className="group text-sm">
                       <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{copy.technicalDetails}</summary>
-                      <div className="mt-4 space-y-4"><JsonBlock title={t.itemEvidence} value={item.evidence} />{item.evaluations?.map((evaluation) => <div key={`${evaluation.id}-raw`} className="grid gap-4 lg:grid-cols-2"><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.evidence}`} value={evaluation.evidence} /><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.rawResponse}`} value={evaluation.rawResponse} /></div>)}</div>
+                      <div className="mt-4 space-y-4"><JsonBlock title={t.itemEvidence} value={item.evidence} locale={locale} />{item.evaluations?.map((evaluation) => <div key={`${evaluation.id}-raw`} className="grid gap-4 lg:grid-cols-2"><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.evidence}`} value={evaluation.evidence} locale={locale} /><JsonBlock title={`${localizedActor(evaluation.evaluator, copy)} — ${t.rawResponse}`} value={evaluation.rawResponse} locale={locale} /></div>)}</div>
                     </details>
                   </div>
                 </DialogContent>
@@ -116,7 +116,7 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
         }) : <p className="text-muted-foreground">{t.noItems}</p>}
       </div>
     </CollapsibleCard>
-    <CollapsibleCard title={t.snapshot} description={t.snapshotDescription}><pre className="max-h-[36rem] overflow-auto rounded-md bg-muted p-4 text-xs whitespace-pre-wrap">{safeJson(review.postSnapshot)}</pre></CollapsibleCard>
+    <CollapsibleCard title={t.snapshot} description={t.snapshotDescription}><JsonViewer value={review.postSnapshot} locale={locale} className="max-h-[48rem]" /></CollapsibleCard>
   </div>
 }
 
@@ -135,10 +135,56 @@ function CollapsibleCard({ title, description, children }: { title: string; desc
     <div className="border-t p-4">{children}</div>
   </details>
 }
-function JsonBlock({ title, value }: { title: string; value: unknown }) {
+function JsonBlock({ title, value, locale }: { title: string; value: unknown; locale: Locale }) {
   if (value === null || value === undefined) return null
-  return <div><h4 className="mb-2 text-sm font-medium">{title}</h4><pre className="max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{safeJson(value)}</pre></div>
+  return <div><h4 className="mb-2 text-sm font-medium">{title}</h4><JsonViewer value={value} locale={locale} className="max-h-72 p-3" /></div>
 }
+
+function JsonViewer({ value, locale, className }: { value: unknown; locale: Locale; className?: string }) {
+  const lines = prettyJson(value).split("\n")
+  return <div
+    dir="ltr"
+    lang={locale}
+    className={`overflow-auto rounded-md border border-slate-200 bg-white py-3 font-mono text-xs leading-6 text-slate-800 ${className ?? ""}`}
+  >
+    <code className="block min-w-max">
+      {lines.map((line, index) => <div key={index} className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-3 hover:bg-slate-50">
+        <span className="select-none border-e border-slate-200 pe-3 text-end text-slate-400">{index + 1}</span>
+        <span className="ps-4 whitespace-pre"><JsonLine line={line} /></span>
+      </div>)}
+    </code>
+  </div>
+}
+
+function prettyJson(value: unknown) {
+  let parsed = value
+  if (typeof value === "string") {
+    try { parsed = JSON.parse(value) } catch { return value }
+  }
+  try { return JSON.stringify(parsed, null, 2) ?? "null" } catch { return safeJson(value) }
+}
+
+function JsonLine({ line }: { line: string }) {
+  const property = line.match(/^(\s*)("(?:\\.|[^"\\])*")(:\s)(.*?)(,?)$/)
+  if (property) return <>
+    <span>{property[1]}</span>
+    <span className="text-primary">{property[2]}</span>
+    <span className="text-slate-500">{property[3]}</span>
+    <JsonLiteral value={property[4]} />
+    <span className="text-slate-500">{property[5]}</span>
+  </>
+  const item = line.match(/^(\s*)(.*?)(,?)$/)
+  return <><span>{item?.[1]}</span><JsonLiteral value={item?.[2] ?? line} /><span className="text-slate-500">{item?.[3]}</span></>
+}
+
+function JsonLiteral({ value }: { value: string }) {
+  if (/^"(?:\\.|[^"\\])*"$/.test(value)) return <span dir="auto" className="text-emerald-700 [unicode-bidi:plaintext]">{value}</span>
+  if (/^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i.test(value)) return <span className="text-amber-700">{value}</span>
+  if (value === "true" || value === "false") return <span className="text-violet-700">{value}</span>
+  if (value === "null") return <span className="italic text-rose-600">{value}</span>
+  return <span className="text-slate-800">{value}</span>
+}
+
 function localizedValue(value: string | null | undefined, t: typeof moderationHistoryDictionaries.en) {
   if (!value) return t.noData
   const labels: Record<string, string> = {
@@ -251,6 +297,7 @@ const detailCopy = {
     qualityDisagreed: "The independent quality check found a different result.", qualityPending: "The quality check is not completed yet.",
     technicalDetails: "Show technical details",
     viewDetails: "View details",
+    yesValue: "Yes", noValue: "No", emptyValue: "No data", itemLabel: "Item",
   },
   fa: {
     outcomeSummary: "نتیجه بررسی", outcomeDescription: "خلاصه روشن از بررسی‌کننده آگهی و دلیل تصمیم نهایی.",
@@ -269,6 +316,7 @@ const detailCopy = {
     qualityDisagreed: "بررسی مستقل کیفیت نتیجه متفاوتی داشت.", qualityPending: "بررسی کیفیت هنوز تکمیل نشده است.",
     technicalDetails: "نمایش جزئیات فنی",
     viewDetails: "مشاهده جزئیات",
+    yesValue: "بله", noValue: "خیر", emptyValue: "بدون اطلاعات", itemLabel: "مورد",
   },
   ps: {
     outcomeSummary: "د بیاکتنې پایله", outcomeDescription: "چا اعلان بیاکتلی او وروستۍ پرېکړه ولې شوې، روښانه لنډیز.",
@@ -287,6 +335,7 @@ const detailCopy = {
     qualityDisagreed: "خپلواکې کیفیتي ارزونې بله پایله وموندله.", qualityPending: "د کیفیت ارزونه لا بشپړه شوې نه ده.",
     technicalDetails: "تخنیکي جزئیات ښکاره کړئ",
     viewDetails: "جزئیات وګورئ",
+    yesValue: "هو", noValue: "نه", emptyValue: "معلومات نشته", itemLabel: "توکی",
   },
 } satisfies Record<Locale, Record<string, string>>
 

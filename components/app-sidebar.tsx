@@ -44,6 +44,18 @@ export function AppSidebar({
       : []),
     ]
   const navigation = mainNavigation
+  const isNavigationActive = (href: string) => {
+    if (pathname === href) return true
+
+    if (href === "/panel/reviews") {
+      return (
+        (pathname.startsWith("/panel/reviews/") && !pathname.startsWith("/panel/reviews/next")) ||
+        pathname.startsWith("/panel/posts/")
+      )
+    }
+
+    return false
+  }
 
   return (
     <Sidebar
@@ -85,7 +97,7 @@ export function AppSidebar({
               {navigation.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={isNavigationActive(item.href)}
                     tooltip={item.title}
                     className="h-11 gap-3 rounded-md px-3 text-base font-normal text-sidebar-foreground transition-colors hover:bg-primary/10 hover:text-primary data-active:bg-primary data-active:font-normal data-active:text-primary-foreground [&_svg]:size-4.5 [&_svg]:text-primary data-active:[&_svg]:text-primary-foreground"
                     render={<Link href={item.href} />}
