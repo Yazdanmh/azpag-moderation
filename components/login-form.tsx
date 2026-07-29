@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import {
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { passwordRecoveryDictionaries } from "@/lib/password-recovery-i18n"
 
 function SubmitButton({ idle, pending: pendingText }: { idle: string; pending: string }) {
   const { pending } = useFormStatus()
@@ -30,6 +32,7 @@ function SubmitButton({ idle, pending: pendingText }: { idle: string; pending: s
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const { locale, dictionary: t } = useI18n()
+  const recovery = passwordRecoveryDictionaries[locale]
   const [showPassword, setShowPassword] = React.useState(false)
   const [state, formAction] = useActionState(login, {} as LoginState)
   React.useEffect(() => {
@@ -70,7 +73,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">{t.password}</FieldLabel>
+                <div className="flex items-center justify-between gap-3">
+                  <FieldLabel htmlFor="password">{t.password}</FieldLabel>
+                  <Link href="/forgot-password" className="text-sm text-primary hover:underline">{recovery.forgotPassword}</Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"

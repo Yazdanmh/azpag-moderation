@@ -1,6 +1,7 @@
 "use client"
 
 import { logout } from "@/app/actions"
+import Link from "next/link"
 import { useI18n } from "@/components/providers"
 import {
   Avatar,
@@ -22,7 +23,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { EllipsisVerticalIcon, LogOutIcon } from "lucide-react"
+import { EllipsisVerticalIcon, LogOutIcon, SettingsIcon } from "lucide-react"
+import { profileDictionaries } from "@/lib/profile-i18n"
 
 export function NavUser({
   user,
@@ -34,7 +36,8 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const { dictionary: t } = useI18n()
+  const { locale, dictionary: t } = useI18n()
+  const profile = profileDictionaries[locale]
   const initials =
     user.name
       .split(/\s+/)
@@ -96,6 +99,11 @@ export function NavUser({
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem nativeButton={false} render={<Link href="/panel/profile" />}>
+              <SettingsIcon />
+              {profile.profile}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <form action={logout}>
               <DropdownMenuItem

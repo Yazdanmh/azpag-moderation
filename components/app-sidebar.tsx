@@ -31,7 +31,7 @@ export function AppSidebar({
   const { locale, dictionary: t } = useI18n()
   const managerOnly = isManagerOnly(user.roles)
   const homeHref = managerOnly ? "/panel/reviews/next" : "/panel"
-  const navigation = managerOnly
+  const mainNavigation = managerOnly
     ? [{ title: t.reviewWorkspace, href: "/panel/reviews/next", icon: FileCheck2Icon }]
     : [
       { title: t.dashboard, href: "/panel", icon: LayoutDashboardIcon },
@@ -43,6 +43,7 @@ export function AppSidebar({
         ]
       : []),
     ]
+  const navigation = mainNavigation
 
   return (
     <Sidebar

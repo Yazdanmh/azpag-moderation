@@ -6,6 +6,7 @@ import { z } from "zod";
 import { dictionaries, isLocale } from "@/lib/i18n";
 import { apiFetch } from "@/lib/api";
 import { decodeJwt } from "jose";
+import { passwordRecoveryDictionaries, type PasswordRecoveryDictionary } from "@/lib/password-recovery-i18n";
 
 export type LoginState = {
   error?: {
@@ -14,9 +15,33 @@ export type LoginState = {
   };
 };
 
+export type PasswordRecoveryState = {
+  error?: {
+    title: string;
+    description: string;
+  };
+  success?: {
+    title: string;
+    description: string;
+  };
+};
+
 const loginSchema = z.object({
   email: z.email().max(254),
   password: z.string().min(1).max(128),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.email().max(254),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.email().max(254),
+  code: z.string().regex(/^\d{6}$/),
+  password: z.string()
+    .min(8)
+    .max(60)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$/),
 });
 
 type LoginResponse = {
@@ -179,6 +204,85 @@ function loginError(title: string, description: string): LoginState {
   return { error: { title, description } };
 }
 
+function recoveryError(title: string, description: string): PasswordRecoveryState {
+  return { error: { title, description } };
+}
+
+function recoveryApiError(status: number, t: PasswordRecoveryDictionary) {
+  if (status === 404) return t.userNotFound;
+  if (status === 401) return t.invalidResetCode;
+  if (status === 422 || status === 400) return t.invalidRecoveryInput;
+  if (status === 429) return t.tooManyRequests;
+  if (status >= 500) return t.serverError;
+  return t.passwordRecoveryFailed;
+}
+
+export async function forgotStaffPassword(
+  _previousState: PasswordRecoveryState,
+  formData: FormData,
+): Promise<PasswordRecoveryState> {
+  const localeValue = formData.get("locale");
+  const locale = isLocale(localeValue) ? localeValue : "fa";
+  const t = passwordRecoveryDictionaries[locale];
+  const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return recoveryError(t.passwordRecoveryErrorTitle, t.invalidRecoveryInput);
+
+  let response: Response;
+  try {
+    response = await apiFetch("/api/auth/staff/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed.data),
+    });
+  } catch {
+    return recoveryError(t.passwordRecoveryErrorTitle, t.serviceUnavailable);
+  }
+
+  if (!response.ok) {
+    return recoveryError(t.passwordRecoveryErrorTitle, recoveryApiError(response.status, t));
+  }
+
+  redirect(`/reset-password?email=${encodeURIComponent(parsed.data.email)}`);
+}
+
+export async function resetStaffPassword(
+  _previousState: PasswordRecoveryState,
+  formData: FormData,
+): Promise<PasswordRecoveryState> {
+  const localeValue = formData.get("locale");
+  const locale = isLocale(localeValue) ? localeValue : "fa";
+  const t = passwordRecoveryDictionaries[locale];
+  const parsed = resetPasswordSchema.safeParse({
+    email: formData.get("email"),
+    code: formData.get("code"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) return recoveryError(t.passwordRecoveryErrorTitle, t.invalidRecoveryInput);
+
+  let response: Response;
+  try {
+    response = await apiFetch("/api/auth/staff/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed.data),
+    });
+  } catch {
+    return recoveryError(t.passwordRecoveryErrorTitle, t.serviceUnavailable);
+  }
+
+  if (!response.ok) {
+    return recoveryError(t.passwordRecoveryErrorTitle, recoveryApiError(response.status, t));
+  }
+
+  await deleteSession();
+  return {
+    success: {
+      title: t.passwordResetSuccessTitle,
+      description: t.passwordResetSuccessDescription,
+    },
+  };
+}
+
 export async function login(
   _previousState: LoginState,
   formData: FormData,
@@ -198,7 +302,7 @@ export async function login(
   let response: Response;
 
   try {
-    response = await apiFetch("/api/auth/login", {
+    response = await apiFetch("/api/auth/staff/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
