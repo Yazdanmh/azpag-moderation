@@ -88,14 +88,14 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
                   </DialogHeader>
                   <div className="space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 p-4">
-                      <div><div className="text-xs text-muted-foreground">{copy.conclusion}</div><p className="mt-1 font-medium">{localizedReasonText(item.reasonTranslations, locale, item.finalReason) || localizedItemExplanation(item.finalOutcome, copy)}</p></div>
+                      <div><div className="text-xs text-muted-foreground">{copy.conclusion}</div><p className="mt-1 font-medium">{localizedReasonText(item.reasonTranslations, locale, item.finalReason, copy) || localizedItemExplanation(item.finalOutcome, copy)}</p></div>
                       <StatusBadge value={item.finalOutcome ?? item.status} label={result} />
                     </div>
                     <div>
                       <h4 className="mb-3 text-sm font-medium">{copy.reviewHistory}</h4>
                       {item.evaluations?.length ? <div className="space-y-3">
                         {item.evaluations.map((evaluation) => <div key={evaluation.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="min-w-0"><p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p><p className="mt-1 text-sm text-muted-foreground">{localizedReasonText(evaluation.reasonTranslations, locale, evaluation.reason) || localizedItemExplanation(evaluation.outcome, copy)}</p></div>
+                          <div className="min-w-0"><p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p><p className="mt-1 text-sm text-muted-foreground">{localizedReasonText(evaluation.reasonTranslations, locale, evaluation.reason, copy) || localizedItemExplanation(evaluation.outcome, copy)}</p></div>
                           <div className="shrink-0 text-start sm:text-end"><StatusBadge value={evaluation.outcome} label={localizedItemResult(evaluation.outcome, null, copy)} /><p className="mt-1 text-xs text-muted-foreground">{formatDate(evaluation.createdAt, locale)}</p></div>
                         </div>)}
                       </div> : <p className="text-sm text-muted-foreground">{copy.noReviewHistory}</p>}
@@ -213,14 +213,23 @@ function localizedItemExplanation(outcome: string | null | undefined, copy: Deta
   return copy.noConclusion
 }
 
-function localizedReasonText(translations: Record<string, string> | null | undefined, locale: Locale, fallback: string | null | undefined) {
-  if (!translations) return fallback || ""
+function localizedReasonText(
+  translations: Record<string, string> | null | undefined,
+  locale: Locale,
+  fallback: string | null | undefined,
+  copy: DetailCopy,
+) {
+  const localizeGeneratedReason = (value: string | null | undefined) => {
+    const match = value?.trim().match(/^(?:Human reviewer|AI reviewer|AI|System) selected (VIOLATION|NO_VIOLATION|UNCERTAIN)\.?$/i)
+    return match ? localizedItemExplanation(match[1].toUpperCase(), copy) : value || ""
+  }
+  if (!translations) return localizeGeneratedReason(fallback)
   const aliases = locale === "fa" ? ["fa", "prs", "dari"] : [locale]
   for (const language of aliases) {
     const value = translations[language]
     if (typeof value === "string" && value.trim()) return value
   }
-  return fallback || translations.en || translations.fa || translations.ps || ""
+  return localizeGeneratedReason(fallback || translations.en || translations.fa || translations.ps)
 }
 
 function localizedActor(actor: string, copy: DetailCopy) {

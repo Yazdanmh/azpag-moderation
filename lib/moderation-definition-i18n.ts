@@ -17,6 +17,7 @@ const ruleLabels: Record<string, LocalizedLabel> = {
 }
 
 const fieldLabels: Record<string, LocalizedLabel> = {
+  fields: { en: "Post details", fa: "جزئیات آگهی", ps: "د اعلان جزئیات" },
   title: { en: "Title", fa: "عنوان", ps: "سرلیک" },
   description: { en: "Description", fa: "توضیحات", ps: "تشریح" },
   images: { en: "Images", fa: "تصاویر", ps: "انځورونه" },
@@ -33,7 +34,9 @@ export function localizedModerationDefinition(
   definition: { ruleId: string; field: string },
   locale: Locale,
 ) {
-  const rule = ruleLabels[definition.ruleId]?.[locale] ?? fallback(definition.ruleId)
-  const field = fieldLabels[definition.field]?.[locale] ?? fallback(definition.field)
+  const ruleKey = definition.ruleId.trim().toLocaleLowerCase()
+  const fieldKey = definition.field.trim().toLocaleLowerCase()
+  const rule = ruleLabels[ruleKey]?.[locale] ?? fallback(definition.ruleId)
+  const field = fieldLabels[fieldKey]?.[locale] ?? fallback(definition.field)
   return { definition: `${rule} — ${field}`, rule, field }
 }
