@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ReviewDetail } from "@/components/moderation/review-detail"
+import { JsonViewer, ReviewDetail } from "@/components/moderation/review-detail"
 import { PostImageGallery } from "@/components/moderation/post-image-gallery"
 import { StatusBadge, safeJson } from "@/components/moderation/review-badges"
 import { getModerationPostHistory, ModerationApiError } from "@/lib/moderation-api"
@@ -15,7 +15,8 @@ import { cookies } from "next/headers"
 import { isLocale, type Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
 import { localizedModerationDefinition } from "@/lib/moderation-definition-i18n"
-import type { ModerationHistoryPost, ModerationPerson } from "@/lib/moderation-types"
+import { localizedGeneratedModerationReason } from "@/lib/moderation-reason-i18n"
+import type { ModerationDecisionReason, ModerationHistoryPost, ModerationPerson } from "@/lib/moderation-types"
 
 export default async function PostHistoryPage({ params }: { params: Promise<{ postId: string }> }) {
   const session = await getSession()
@@ -47,22 +48,33 @@ export default async function PostHistoryPage({ params }: { params: Promise<{ po
   const categories = Array.isArray(post.categories) ? post.categories : []
   const fieldValues = Array.isArray(post.fieldValues) ? post.fieldValues : []
   const features = Array.isArray(post.features) ? post.features : []
+  const moderationReasons = readModerationReasons(post.moderation_reason)
+  const affectedFields = new Set(moderationReasons.flatMap(fieldsForReason))
+  const affectedImageIds = moderationReasons.flatMap((reason) =>
+    reason.affectedImages
+      .map((image) => image.imageId ?? (image.imageIndex !== undefined ? images[image.imageIndex]?.id : undefined))
+      .filter((id): id is string => Boolean(id)),
+  )
   return <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
     <div><h1 className="text-2xl font-semibold">{t.postHistoryTitle}</h1><p className="text-muted-foreground">{t.history}</p></div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Summary label={t.totalReviews} value={history.summary?.totalReviews ?? reviews.length} icon={FilesIcon} /><Summary label={t.standardReviews} value={history.summary?.standardReviews ?? 0} icon={FileCheck2Icon} /><Summary label={t.qualityReviews} value={history.summary?.qualityReviews ?? 0} icon={TestTube2Icon} /><Summary label={t.revisionsLabel} value={history.summary?.revisions?.join(", ") || post.revision} icon={GitBranchIcon} /></div>
     <Card><CardHeader><CardTitle>{t.postInformation}</CardTitle><CardDescription>{t.history}</CardDescription></CardHeader><CardContent>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
         <div className="space-y-5">
-          {images.length > 0 && <PostImageGallery images={images.map((image) => ({ id: image.id, src: historyImageUrl(image), fullSrc: image.url }))} title={post.title} locale={locale} labels={{ previous: t.previous, next: t.next, maximize: t.maximize, images: t.imagesLabel, of: t.of }} />}
+          {images.length > 0 && <PostImageGallery images={images.map((image) => ({ id: image.id, src: historyImageUrl(image), fullSrc: image.url }))} title={post.title} locale={locale} highlightedImageIds={affectedImageIds} moderationLabel={t.moderationReason} labels={{ previous: t.previous, next: t.next, maximize: t.maximize, images: t.imagesLabel, of: t.of }} />}
           <PostIdentityRow post={post} locale={locale} statusLabel={statusLabels[post.status]} revisionLabel={t.currentRevision} />
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold">{post.title}</h2>
-            <p className="whitespace-pre-wrap text-muted-foreground">{post.description || t.noDescription}</p>
+            <div className={affectedFields.has("title") ? "rounded-md border border-destructive/40 bg-destructive/5 p-3" : ""}>
+              <h2 className="text-xl font-semibold">{post.title}</h2>
+            </div>
+            <div className={affectedFields.has("description") ? "rounded-md border border-destructive/40 bg-destructive/5 p-3" : ""}>
+              <p className="whitespace-pre-wrap text-muted-foreground">{post.description || t.noDescription}</p>
+            </div>
           </div>
         </div>
         <div className="space-y-6">
-          <LocalizedCategories categories={categories} locale={locale} label={t.categoriesLabel} />
-          <DynamicFields values={fieldValues} locale={locale} labels={t} />
+          <LocalizedCategories categories={categories} locale={locale} label={t.categoriesLabel} highlighted={affectedFields.has("categories")} />
+          <DynamicFields values={fieldValues} locale={locale} labels={t} highlighted={affectedFields.has("fields")} />
           <PostFeatures features={features} locale={locale} labels={t} />
         </div>
         <div className="space-y-4">
@@ -130,9 +142,9 @@ function authorImage(author: ModerationPerson | undefined) {
   if (typeof medium === "string") return medium
   return medium?.url || author?.avatar?.url || author?.profile || ""
 }
-function LocalizedCategories({ categories, locale, label }: { categories: NonNullable<ModerationHistoryPost["categories"]>; locale: string; label: string }) {
+function LocalizedCategories({ categories, locale, label, highlighted = false }: { categories: NonNullable<ModerationHistoryPost["categories"]>; locale: string; label: string; highlighted?: boolean }) {
   return (
-    <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+    <div className={`sm:col-span-2 lg:col-span-1 xl:col-span-2 ${highlighted ? "rounded-md border border-destructive/40 bg-destructive/5 p-3" : ""}`}>
       <div className="mb-2 text-xs text-muted-foreground">{label}</div>
       <div className="flex flex-wrap gap-2">
         {categories.length ? categories.map((category) => (
@@ -150,9 +162,9 @@ function localizedCategoryName(category: NonNullable<ModerationHistoryPost["cate
   }
   return category.name
 }
-function DynamicFields({ values, locale, labels }: { values: NonNullable<ModerationHistoryPost["fieldValues"]>; locale: Locale; labels: typeof moderationHistoryDictionaries.en }) {
+function DynamicFields({ values, locale, labels, highlighted = false }: { values: NonNullable<ModerationHistoryPost["fieldValues"]>; locale: Locale; labels: typeof moderationHistoryDictionaries.en; highlighted?: boolean }) {
   return (
-    <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+    <div className={`sm:col-span-2 lg:col-span-1 xl:col-span-2 ${highlighted ? "rounded-md border border-destructive/40 bg-destructive/5 p-3" : ""}`}>
       <div className="mb-2 text-xs text-muted-foreground">{labels.dynamicFieldsLabel}</div>
       {values.length ? (
         <div className="divide-y border-y">
@@ -218,10 +230,18 @@ function ModerationReasons({ value, locale, label, prominent = false }: { value:
           {reasons.map((reason, index) => {
             const definition = localizedModerationDefinition(reason, locale)
             const explanation = localizedReason(reason, locale)
+            const fields = fieldsForReason(reason)
             return (
               <div key={`${reason.ruleId}:${reason.field}:${index}`} className={prominent ? "rounded-md border border-primary/20 bg-background p-4" : "rounded-md border bg-background p-3"}>
                 <div className={prominent ? "text-base font-semibold text-foreground" : "font-medium"}>{definition.definition}</div>
                 {explanation && <p className={prominent ? "mt-2 text-sm leading-6 text-foreground/75" : "mt-1.5 text-sm leading-6 text-muted-foreground"}>{explanation}</p>}
+                {fields.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
+                  {fields.map((field) => <Badge key={field} variant="outline" className="border-destructive/25 bg-destructive/5 font-normal text-destructive">{moderationFieldLabel(field, locale)}</Badge>)}
+                </div>}
+                {reason.evidence && <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{evidenceLabel(locale)}</summary>
+                  <JsonViewer value={reason.evidence} locale={locale} className="mt-2 max-h-64" />
+                </details>}
               </div>
             )
           })}
@@ -230,11 +250,9 @@ function ModerationReasons({ value, locale, label, prominent = false }: { value:
     </div>
   )
 }
-type ReadableModerationReason = {
-  ruleId: string
-  field: string
-  reason?: string
-  reasonTranslations?: Record<string, string> | null
+type ReadableModerationReason = ModerationDecisionReason & {
+  affectedFields: string[]
+  affectedImages: Array<{ imageId?: string; imageIndex?: number }>
 }
 function readModerationReasons(value: unknown): ReadableModerationReason[] {
   const candidates = Array.isArray(value)
@@ -249,17 +267,54 @@ function readModerationReasons(value: unknown): ReadableModerationReason[] {
     const translations = record.reasonTranslations && typeof record.reasonTranslations === "object"
       ? Object.fromEntries(Object.entries(record.reasonTranslations).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
       : null
+    const affectedFields = Array.isArray(record.affectedFields)
+      ? record.affectedFields.filter((field): field is string => typeof field === "string")
+      : []
+    const affectedImages = Array.isArray(record.affectedImages)
+      ? record.affectedImages.flatMap((image) => {
+          if (!image || typeof image !== "object") return []
+          const candidate = image as Record<string, unknown>
+          const imageId = typeof candidate.imageId === "string" ? candidate.imageId : undefined
+          const imageIndex = typeof candidate.imageIndex === "number" ? candidate.imageIndex : undefined
+          return imageId || imageIndex !== undefined ? [{ imageId, imageIndex }] : []
+        })
+      : []
     return [{
       ruleId: record.ruleId,
       field: record.field,
+      reviewItemId: typeof record.reviewItemId === "string" ? record.reviewItemId : undefined,
+      affectedFields,
+      affectedImages,
       reason: typeof record.reason === "string" ? record.reason : undefined,
       reasonTranslations: translations,
+      evidence: record.evidence && typeof record.evidence === "object" ? record.evidence as ModerationDecisionReason["evidence"] : null,
     }]
   })
 }
+function fieldsForReason(reason: ReadableModerationReason) {
+  if (reason.affectedFields.length) return reason.affectedFields
+  return reason.field !== "post" ? [reason.field] : []
+}
+function moderationFieldLabel(field: string, locale: Locale) {
+  const labels: Record<string, Record<Locale, string>> = {
+    post: { en: "Post", fa: "اعلان", ps: "اعلان" },
+    title: { en: "Title", fa: "عنوان", ps: "سرلیک" },
+    description: { en: "Description", fa: "توضیحات", ps: "تشریح" },
+    images: { en: "Images", fa: "تصاویر", ps: "انځورونه" },
+    fields: { en: "Post details", fa: "مشخصات اعلان", ps: "د اعلان جزئیات" },
+    categories: { en: "Categories", fa: "دسته‌بندی", ps: "کټګورۍ" },
+    price: { en: "Price", fa: "قیمت", ps: "بیه" },
+    user_posts: { en: "Previous posts", fa: "اعلان‌های قبلی", ps: "پخواني اعلانونه" },
+  }
+  return labels[field]?.[locale] ?? field.replaceAll("_", " ")
+}
+function evidenceLabel(locale: Locale) {
+  return locale === "fa" ? "مشاهده شواهد فنی" : locale === "ps" ? "تخنیکي شواهد وګورئ" : "View technical evidence"
+}
 function localizedReason(reason: ReadableModerationReason, locale: string) {
   const translations = reason.reasonTranslations
-  return translations?.[locale] || (locale === "fa" ? translations?.prs : undefined) || reason.reason || ""
+  const value = translations?.[locale] || (locale === "fa" ? translations?.prs : undefined) || reason.reason || ""
+  return localizedGeneratedModerationReason(value, locale as Locale)
 }
 function Info({ label, value }: { label: string; value: unknown }) {
   return <div><div className="text-xs text-muted-foreground">{label}</div><div className="mt-1 break-words whitespace-pre-wrap">{safeJson(value)}</div></div>

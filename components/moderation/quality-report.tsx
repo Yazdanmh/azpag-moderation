@@ -12,6 +12,7 @@ import type { ApiResult, EvaluationOutcome, QualityReportResponse } from "@/lib/
 import { formatAgreementRate } from "@/lib/moderation-utils"
 import { moderationDictionaries } from "@/lib/moderation-i18n"
 import { localizedModerationDefinition } from "@/lib/moderation-definition-i18n"
+import { localizedGeneratedModerationReason } from "@/lib/moderation-reason-i18n"
 import { ModerationLoading, ResultState } from "./shared"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -124,9 +125,9 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
                   <TableCell><div>{localized.definition}</div><div className="font-mono text-xs text-muted-foreground">{row.definitionId}</div></TableCell>
                   <TableCell><OutcomeBadge value={row.ai?.outcome ?? null} owner={t.ai} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell>{row.ai ? row.ai.confidence.toLocaleString(locale) : t.noData}</TableCell>
-                  <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div>{row.ai?.reason && <div className="mt-1 max-w-72 whitespace-normal text-xs text-muted-foreground">{translatedReason(row.ai.reasonTranslations, locale) || row.ai.reason}</div>}</TableCell>
+                  <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div>{row.ai && (row.ai.reason || row.ai.reasonTranslations) && <div className="mt-1 max-w-72 whitespace-normal text-xs text-muted-foreground">{localizedQualityReason(row.ai.reason, row.ai.reasonTranslations, locale) || t.noData}</div>}</TableCell>
                   <TableCell><OutcomeBadge value={row.human?.outcome ?? null} owner={t.human} noData={t.noData} labels={outcomeLabels} /></TableCell>
-                  <TableCell className="max-w-72 whitespace-normal">{row.human?.reason ?? t.noData}</TableCell>
+                  <TableCell className="max-w-72 whitespace-normal">{row.human ? localizedQualityReason(row.human.reason, row.human.reasonTranslations, locale) || t.noData : t.noData}</TableCell>
                   <TableCell>{row.completedAt ? new Date(row.completedAt).toLocaleString(locale) : t.noData}</TableCell>
                 </TableRow>
               )})}</TableBody>
@@ -139,7 +140,12 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
   )
 }
 
-function translatedReason(translations: Record<string, string> | null | undefined, locale: string) {
-  if (!translations) return ""
-  return translations[locale] || translations[locale === "fa" ? "prs" : locale] || ""
+function localizedQualityReason(
+  reason: string | null | undefined,
+  translations: Record<string, string> | null | undefined,
+  locale: "en" | "fa" | "ps",
+) {
+  const translated = translations?.[locale] ||
+    (locale === "fa" ? translations?.prs || translations?.dari : undefined)
+  return localizedGeneratedModerationReason(translated || reason || "", locale)
 }

@@ -84,7 +84,7 @@ export const dictionaries = {
     loginShowcaseBadge: "ساخته‌شده برای افغانستان",
     loginShowcaseTitle: "بیشتر پیدا کنید، محلی ارتباط بگیرید.",
     loginShowcaseDescription: "ازپگ مردم و کسب‌وکارها را برای جستجو، خرید و فروش در سراسر افغانستان به هم پیوند می‌دهد.",
-    loginFeatureReview: "جستجوی آگهی‌های محلی",
+    loginFeatureReview: "جستجوی اعلان‌های محلی",
     loginFeatureQuality: "ارتباط با جامعه",
     loginShowcaseFooter: "ازپگ · بازار آنلاین افغانستان",
     welcome: "به پنل مدیریت محتوای ازپگ خوش آمدید.",

@@ -4,6 +4,16 @@ export const MODERATION_ROLES: ModerationRole[] = ["SUPERADMIN", "ADMIN", "MANAG
 export type ModerationDecisionType = "REJECTION" | "CORRECTION"
 export type HumanReviewOutcome = "VIOLATION" | "NO_VIOLATION"
 export type EvaluationOutcome = HumanReviewOutcome | "UNCERTAIN"
+export type ModerationReviewField = "title" | "description" | "images" | "fields" | "categories" | "price" | "user_posts"
+export type ReviewScopeMode = "FIELD" | "AI_FOCUSED" | "WHOLE_POST"
+
+export interface HumanReviewScope {
+  mode: ReviewScopeMode
+  fields: ModerationReviewField[]
+  includesImages: boolean
+  includesDynamicFields: boolean
+  requiresPreviousPostComparison: boolean
+}
 
 export interface ModerationReviewItem {
   id: string
@@ -12,7 +22,9 @@ export interface ModerationReviewItem {
   decisionType: ModerationDecisionType
   sequence: number
   ruleName: string
+  ruleDescription?: string | Partial<Record<"en" | "fa" | "ps", string>>
   category: string
+  reviewScope?: HumanReviewScope
   requiresReason?: boolean
 }
 
@@ -32,7 +44,11 @@ export interface ModerationPostSnapshot {
   isSold: boolean | null
   isLDFB: boolean | null
   images: Array<{ id?: string; url: string }>
-  categories: Array<{ id: number; name: string }>
+  categories: Array<{
+    id: number
+    name: string
+    translations?: Array<{ language: string; value: string }>
+  }>
   contact: {
     phone?: string | null
     whatsapp?: string | null
@@ -113,6 +129,7 @@ export interface QualityDisagreement {
   human: {
     outcome: EvaluationOutcome
     reason: string
+    reasonTranslations?: Record<string, string> | null
     evaluatorId: string | null
   } | null
 }
@@ -305,7 +322,7 @@ export interface ModerationReviewDetail {
   type: ModerationReviewType
   status: ModerationReviewStatus
   finalDecision: ModerationDecision | null
-  decisionReasons: unknown
+  decisionReasons: ModerationDecisionReason[]
   queuedAt: string
   aiStartedAt: string | null
   aiCompletedAt: string | null
@@ -329,7 +346,7 @@ export interface ModerationReviewListItem {
   type: ModerationReviewType
   status: ModerationReviewStatus
   finalDecision: ModerationDecision | null
-  decisionReasons: unknown
+  decisionReasons: ModerationDecisionReason[]
   queuedAt: string
   aiStartedAt: string | null
   aiCompletedAt: string | null
@@ -367,6 +384,28 @@ export interface ModerationReviewListItem {
   }
 }
 
+export interface ModerationDecisionReason {
+  reviewItemId?: string
+  ruleId: string
+  field: string
+  affectedFields?: string[]
+  affectedImages?: Array<{
+    imageId?: string
+    imageIndex?: number
+  }>
+  reason?: string
+  reasonTranslations?: Record<string, string> | null
+  evidence?: {
+    affectedFields?: string[]
+    affectedImages?: Array<{
+      imageId?: string
+      imageIndex?: number
+    }>
+    excerpt?: string
+    [key: string]: unknown
+  } | null
+}
+
 export interface ModerationReviewsResponse {
   data: ModerationReviewListItem[]
   pagination: Pagination & {
@@ -391,7 +430,7 @@ export interface ModerationHistoryPost {
   updated_at: string
   published_at: string | null
   deletedAt: string | null
-  moderation_reason: unknown
+  moderation_reason: ModerationDecisionReason[] | { reasons?: ModerationDecisionReason[] } | null
   author?: ModerationPerson
   images?: Array<{
     id: string

@@ -9,6 +9,7 @@ import { StatusBadge, personName, safeJson } from "./review-badges"
 import type { Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
 import { localizedModerationDefinition } from "@/lib/moderation-definition-i18n"
+import { localizedGeneratedModerationReason } from "@/lib/moderation-reason-i18n"
 
 export function ReviewDetail({ review, showPost = true, locale }: { review: ModerationReviewDetail; showPost?: boolean; locale: Locale }) {
   const t = moderationHistoryDictionaries[locale]
@@ -81,21 +82,21 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
                         <EyeIcon />
                         {copy.viewDetails}
                       </DialogTrigger>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-h-[calc(100svh-1rem)] w-[calc(100vw-1rem)] max-w-3xl grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden p-4 sm:max-h-[calc(100svh-2rem)] sm:w-[calc(100vw-2rem)] sm:p-6">
                   <DialogHeader>
                     <DialogTitle>{definition.rule}</DialogTitle>
                     <DialogDescription>{copy.checkNumber.replace("{number}", (index + 1).toLocaleString(locale))} · {copy.checkedArea}: {definition.field}</DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-5">
+                  <div className="min-h-0 space-y-5 overflow-y-auto overscroll-contain pe-1">
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 p-4">
-                      <div><div className="text-xs text-muted-foreground">{copy.conclusion}</div><p className="mt-1 font-medium">{localizedReasonText(item.reasonTranslations, locale, item.finalReason, copy) || localizedItemExplanation(item.finalOutcome, copy)}</p></div>
+                      <div><div className="text-xs text-muted-foreground">{copy.conclusion}</div><p className="mt-1 font-medium">{localizedReasonText(item.reasonTranslations, locale, item.finalReason) || localizedItemExplanation(item.finalOutcome, copy)}</p></div>
                       <StatusBadge value={item.finalOutcome ?? item.status} label={result} />
                     </div>
                     <div>
                       <h4 className="mb-3 text-sm font-medium">{copy.reviewHistory}</h4>
                       {item.evaluations?.length ? <div className="space-y-3">
                         {item.evaluations.map((evaluation) => <div key={evaluation.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="min-w-0"><p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p><p className="mt-1 text-sm text-muted-foreground">{localizedReasonText(evaluation.reasonTranslations, locale, evaluation.reason, copy) || localizedItemExplanation(evaluation.outcome, copy)}</p></div>
+                          <div className="min-w-0"><p className="text-sm font-medium">{localizedActor(evaluation.evaluator, copy)}</p><p className="mt-1 text-sm text-muted-foreground">{localizedReasonText(evaluation.reasonTranslations, locale, evaluation.reason) || localizedItemExplanation(evaluation.outcome, copy)}</p></div>
                           <div className="shrink-0 text-start sm:text-end"><StatusBadge value={evaluation.outcome} label={localizedItemResult(evaluation.outcome, null, copy)} /><p className="mt-1 text-xs text-muted-foreground">{formatDate(evaluation.createdAt, locale)}</p></div>
                         </div>)}
                       </div> : <p className="text-sm text-muted-foreground">{copy.noReviewHistory}</p>}
@@ -137,10 +138,10 @@ function CollapsibleCard({ title, description, children }: { title: string; desc
 }
 function JsonBlock({ title, value, locale }: { title: string; value: unknown; locale: Locale }) {
   if (value === null || value === undefined) return null
-  return <div><h4 className="mb-2 text-sm font-medium">{title}</h4><JsonViewer value={value} locale={locale} className="max-h-72 p-3" /></div>
+  return <div className="min-w-0"><h4 className="mb-2 text-sm font-medium">{title}</h4><JsonViewer value={value} locale={locale} className="max-h-[min(18rem,35svh)] p-3" /></div>
 }
 
-function JsonViewer({ value, locale, className }: { value: unknown; locale: Locale; className?: string }) {
+export function JsonViewer({ value, locale, className }: { value: unknown; locale: Locale; className?: string }) {
   const lines = prettyJson(value).split("\n")
   return <div
     dir="ltr"
@@ -217,11 +218,9 @@ function localizedReasonText(
   translations: Record<string, string> | null | undefined,
   locale: Locale,
   fallback: string | null | undefined,
-  copy: DetailCopy,
 ) {
   const localizeGeneratedReason = (value: string | null | undefined) => {
-    const match = value?.trim().match(/^(?:Human reviewer|AI reviewer|AI|System) selected (VIOLATION|NO_VIOLATION|UNCERTAIN)\.?$/i)
-    return match ? localizedItemExplanation(match[1].toUpperCase(), copy) : value || ""
+    return value ? localizedGeneratedModerationReason(value, locale) : ""
   }
   if (!translations) return localizeGeneratedReason(fallback)
   const aliases = locale === "fa" ? ["fa", "prs", "dari"] : [locale]
@@ -278,14 +277,45 @@ function DecisionReasons({ value, locale, emptyLabel }: { value: unknown; locale
       const ruleId = typeof reason.ruleId === "string" ? reason.ruleId : ""
       const field = typeof reason.field === "string" ? reason.field : ""
       const label = ruleId || field ? localizedModerationDefinition({ ruleId, field }, locale).definition : emptyLabel
-      const translations = typeof reason.reasonTranslations === "object" && reason.reasonTranslations !== null ? reason.reasonTranslations as Record<string, unknown> : {}
-      const translatedReason = translations[locale] ?? (locale === "fa" ? translations.prs : undefined) ?? reason.reason
+      const translations = typeof reason.reasonTranslations === "object" && reason.reasonTranslations !== null
+        ? Object.fromEntries(Object.entries(reason.reasonTranslations).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+        : {}
+      const translatedReason = localizedReasonText(
+        translations,
+        locale,
+        typeof reason.reason === "string" ? reason.reason : undefined,
+      )
+      const affectedFields = Array.isArray(reason.affectedFields)
+        ? reason.affectedFields.filter((value): value is string => typeof value === "string")
+        : field && field !== "post" ? [field] : []
+      const evidence = reason.evidence && typeof reason.evidence === "object" ? reason.evidence : null
       return <div key={`${ruleId}-${field}-${index}`} className="rounded-md border p-3">
         <p className="font-medium">{label}</p>
-        {typeof translatedReason === "string" && translatedReason && <p className="mt-1 text-sm text-muted-foreground">{translatedReason}</p>}
+        {translatedReason && <p className="mt-1 text-sm text-muted-foreground">{translatedReason}</p>}
+        {affectedFields.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
+          {affectedFields.map((affectedField) => <span key={affectedField} className="rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1 text-xs text-destructive">{decisionFieldLabel(affectedField, locale)}</span>)}
+        </div>}
+        {evidence && <details className="mt-3 text-sm">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{locale === "fa" ? "مشاهده شواهد فنی" : locale === "ps" ? "تخنیکي شواهد وګورئ" : "View technical evidence"}</summary>
+          <JsonViewer value={evidence} locale={locale} className="mt-2 max-h-64" />
+        </details>}
       </div>
     })}
   </div>
+}
+
+function decisionFieldLabel(field: string, locale: Locale) {
+  const labels: Record<string, Record<Locale, string>> = {
+    post: { en: "Post", fa: "اعلان", ps: "اعلان" },
+    title: { en: "Title", fa: "عنوان", ps: "سرلیک" },
+    description: { en: "Description", fa: "توضیحات", ps: "تشریح" },
+    images: { en: "Images", fa: "تصاویر", ps: "انځورونه" },
+    fields: { en: "Post details", fa: "مشخصات اعلان", ps: "د اعلان جزئیات" },
+    categories: { en: "Categories", fa: "دسته‌بندی", ps: "کټګورۍ" },
+    price: { en: "Price", fa: "قیمت", ps: "بیه" },
+    user_posts: { en: "Previous posts", fa: "اعلان‌های قبلی", ps: "پخواني اعلانونه" },
+  }
+  return labels[field]?.[locale] ?? field.replaceAll("_", " ")
 }
 
 const detailCopy = {
@@ -309,16 +339,16 @@ const detailCopy = {
     yesValue: "Yes", noValue: "No", emptyValue: "No data", itemLabel: "Item",
   },
   fa: {
-    outcomeSummary: "نتیجه بررسی", outcomeDescription: "خلاصه روشن از بررسی‌کننده آگهی و دلیل تصمیم نهایی.",
+    outcomeSummary: "نتیجه بررسی", outcomeDescription: "خلاصه روشن از بررسی‌کننده اعلان و دلیل تصمیم نهایی.",
     reviewedBy: "بررسی‌شده توسط", finishedOn: "زمان تکمیل بررسی", noDecisionReasons: "هیچ مشکل مربوط به قوانین یافت نشد.",
     timeSummary: "زمان‌بندی بررسی", timeDescription: "مدت بررسی و زمان انجام هر مرحله.",
     totalDuration: "مدت کل بررسی", aiDuration: "مدت بررسی هوش مصنوعی", queueWait: "مدت انتظار برای بررسی‌کننده", humanDuration: "مدت کار بررسی‌کننده",
-    policyChecks: "بررسی قوانین", policyChecksDescription: "قانون برای این آگهی بررسی شده است",
-    checkNumber: "بررسی {number}", checkedArea: "بخش بررسی‌شده آگهی", conclusion: "نتیجه بررسی",
+    policyChecks: "بررسی قوانین", policyChecksDescription: "قانون برای این اعلان بررسی شده است",
+    checkNumber: "بررسی {number}", checkedArea: "بخش بررسی‌شده اعلان", conclusion: "نتیجه بررسی",
     reviewHistory: "نحوه انجام بررسی", noReviewHistory: "نتیجه‌ای برای این بررسی ثبت نشده است.",
     problemFound: "مشکل یافت شد", noProblemFound: "مشکلی یافت نشد", needsHumanCheck: "نیازمند بررسی انسانی",
-    awaitingReview: "در انتظار بررسی", reviewed: "بررسی‌شده", problemExplanation: "این بخش آگهی با قوانین مطابقت ندارد.",
-    noProblemExplanation: "این بخش آگهی با قوانین مطابقت دارد.", uncertainExplanation: "بررسی خودکار نتوانست تصمیم مطمئنی بگیرد.",
+    awaitingReview: "در انتظار بررسی", reviewed: "بررسی‌شده", problemExplanation: "این بخش اعلان با قوانین مطابقت ندارد.",
+    noProblemExplanation: "این بخش اعلان با قوانین مطابقت دارد.", uncertainExplanation: "بررسی خودکار نتوانست تصمیم مطمئنی بگیرد.",
     noConclusion: "نتیجه نهایی ثبت نشده است.", humanReviewer: "بررسی‌کننده انسانی", aiReviewer: "بررسی هوش مصنوعی",
     automaticCheck: "بررسی خودکار سیستم", reviewerLabel: "بررسی‌کننده", qualityCheck: "بررسی کیفیت",
     qualityAgreed: "بررسی مستقل کیفیت با نتیجه اصلی موافق بود.",

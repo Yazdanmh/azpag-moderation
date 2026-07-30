@@ -7,7 +7,7 @@ const ruleLabels: Record<string, LocalizedLabel> = {
   country_political_content: { en: "Political or religious content", fa: "محتوای سیاسی یا مذهبی", ps: "سیاسي یا مذهبي منځپانګه" },
   country_immoral_content: { en: "Immoral or dangerous content", fa: "محتوای غیراخلاقی یا خطرناک", ps: "غیراخلاقي یا خطرناکه منځپانګه" },
   country_noncommercial_use: { en: "Non-commercial use", fa: "استفاده غیرتجاری", ps: "غیر سوداګریزه کارونه" },
-  product_duplicate_post: { en: "Duplicate post", fa: "آگهی تکراری", ps: "تکراري اعلان" },
+  product_duplicate_post: { en: "Duplicate post", fa: "اعلان تکراری", ps: "تکراري اعلان" },
   product_unrelated_content: { en: "Unrelated content", fa: "محتوای نامرتبط", ps: "نامرتبطه منځپانګه" },
   product_unspecified_subject: { en: "Unspecified product or service", fa: "کالا یا خدمت نامشخص", ps: "نامعلوم توکی یا خدمت" },
   product_incorrect_category: { en: "Incorrect category", fa: "دسته‌بندی نادرست", ps: "ناسمه کټګوري" },
@@ -17,11 +17,12 @@ const ruleLabels: Record<string, LocalizedLabel> = {
 }
 
 const fieldLabels: Record<string, LocalizedLabel> = {
-  fields: { en: "Post details", fa: "جزئیات آگهی", ps: "د اعلان جزئیات" },
+  post: { en: "Post", fa: "اعلان", ps: "اعلان" },
+  fields: { en: "Post details", fa: "جزئیات اعلان", ps: "د اعلان جزئیات" },
   title: { en: "Title", fa: "عنوان", ps: "سرلیک" },
   description: { en: "Description", fa: "توضیحات", ps: "تشریح" },
   images: { en: "Images", fa: "تصاویر", ps: "انځورونه" },
-  user_posts: { en: "User posts", fa: "آگهی‌های کاربر", ps: "د کارن اعلانونه" },
+  user_posts: { en: "User posts", fa: "اعلان‌های کاربر", ps: "د کارن اعلانونه" },
   categories: { en: "Categories", fa: "دسته‌بندی‌ها", ps: "کټګورۍ" },
   price: { en: "Price", fa: "قیمت", ps: "بیه" },
 }
