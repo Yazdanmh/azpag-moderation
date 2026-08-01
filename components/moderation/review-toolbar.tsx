@@ -28,6 +28,7 @@ type Labels = {
   to: string
   apply: string
   clear: string
+  perPage: string
 }
 
 export function ReviewToolbar({
@@ -53,6 +54,13 @@ export function ReviewToolbar({
   const [refreshing, startTransition] = React.useTransition()
   const activeCount = filters.filter(({ name, value }) => Boolean(value) && !(name === "sort" && value === "newest")).length
     + (reviewerId ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)
+  const changePageSize = (value: string | null) => {
+    if (!value) return
+    const params = new URLSearchParams(window.location.search)
+    params.set("pageSize", value)
+    params.set("page", "1")
+    startTransition(() => router.push(`/panel/reviews?${params.toString()}`))
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row">
@@ -70,6 +78,17 @@ export function ReviewToolbar({
       </form>
 
       <div className="flex min-w-0 gap-2">
+        <Select value={String(pageSize)} onValueChange={changePageSize}>
+          <SelectTrigger className="min-w-28" aria-label={labels.perPage} title={labels.perPage}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {[10, 20, 50, 100].map((size) => (
+              <SelectItem key={size} value={String(size)}>{size} {labels.perPage}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Button
           type="button"
           variant="outline"

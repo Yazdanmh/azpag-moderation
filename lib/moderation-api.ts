@@ -62,9 +62,10 @@ export async function getModerationQualityReport(
   accessToken: string,
   query: ModerationQualityQuery = {},
 ) {
+  const paginatedQuery = { ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 10 }
   return parseApiResponse<QualityReportResponse>(
     await authenticatedApiFetch(
-      `/api/moderation/quality/report${buildQueryString({ ...query })}`,
+      `/api/moderation/quality/report${buildQueryString(paginatedQuery)}`,
       accessToken,
     ),
   )
@@ -92,8 +93,9 @@ export async function getModerationReviews(
   accessToken: string,
   query: ModerationReviewsQuery = {},
 ) {
+  const paginatedQuery = { ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 10 }
   return parseApiResponse<ModerationReviewsResponse>(
-    await authenticatedApiFetch(`/api/moderation/reviews${buildQueryString({ ...query })}`, accessToken),
+    await authenticatedApiFetch(`/api/moderation/reviews${buildQueryString(paginatedQuery)}`, accessToken),
   )
 }
 

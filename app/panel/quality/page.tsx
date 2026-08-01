@@ -25,7 +25,7 @@ export default async function QualityPage({
   const dateFrom = first(params.dateFrom)
   const dateTo = first(params.dateTo)
   const page = Math.max(1, Number(first(params.page)) || 1)
-  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 20))
+  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 10))
   const query = {
     dateFrom: toApiDate(dateFrom, false),
     dateTo: toApiDate(dateTo, true),

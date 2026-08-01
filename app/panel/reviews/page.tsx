@@ -61,7 +61,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     "decidedAt:asc": t.decidedOldest,
   }
   const page = Math.max(1, Number(first(params.page)) || 1)
-  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 20))
+  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 10))
   const query: ModerationReviewsQuery = {
     page, pageSize, query: first(params.query),
     status: first(params.status) as ModerationReviewStatus | undefined,
