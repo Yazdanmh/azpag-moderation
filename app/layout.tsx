@@ -2,12 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { cookies } from "next/headers";
-import { directionFor, isLocale } from "@/lib/i18n";
+import { dictionaries, directionFor, isLocale } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "Azpag Moderation",
-  description: "Azpag moderation dashboard",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const savedLocale = (await cookies()).get("azpag_locale")?.value;
+  const locale = isLocale(savedLocale) ? savedLocale : "fa";
+  const dictionary = dictionaries[locale];
+
+  return {
+    title: dictionary.metadataTitle,
+    description: dictionary.metadataDescription,
+  };
+}
 
 export default async function RootLayout({
   children,

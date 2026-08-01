@@ -3,6 +3,8 @@ export type Locale = (typeof locales)[number]
 
 export const dictionaries = {
   en: {
+    metadataTitle: "Azpag Content Moderation",
+    metadataDescription: "Securely review and manage content for the Azpag online marketplace.",
     language: "Language",
     brandName: "Azpag",
     english: "English",
@@ -56,6 +58,8 @@ export const dictionaries = {
     loginErrorTitle: "Login failed",
   },
   fa: {
+    metadataTitle: "مدیریت محتوای ازپگ",
+    metadataDescription: "بررسی و مدیریت امن محتوای بازار آنلاین ازپگ.",
     language: "زبان",
     brandName: "ازپگ",
     english: "English",
@@ -109,6 +113,8 @@ export const dictionaries = {
     loginErrorTitle: "ورود ناموفق بود",
   },
   ps: {
+    metadataTitle: "د ازپگ د منځپانګې مدیریت",
+    metadataDescription: "د ازپگ آنلاین بازار منځپانګه په خوندي ډول وڅېړئ او مدیریت یې کړئ.",
     language: "ژبه",
     brandName: "ازپگ",
     english: "English",
