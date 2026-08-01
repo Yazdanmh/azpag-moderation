@@ -2,7 +2,7 @@
 
 import { CheckIcon, Globe2Icon } from "lucide-react"
 
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

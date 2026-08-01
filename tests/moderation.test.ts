@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { hasModerationRole, isManagerOnly } from "../lib/moderation-types.ts"
-import { ApiResponseError, buildQueryString, formatAgreementRate, paginationTotal, paginationTotalPages, parseApiResponse } from "../lib/moderation-utils.ts"
+import { hasModerationRole, isManagerOnly } from "../lib/moderation/types.ts"
+import { ApiResponseError, buildQueryString, formatAgreementRate, paginationTotal, paginationTotalPages, parseApiResponse } from "../lib/moderation/utils.ts"
 
 test("moderation navigation authorization accepts only supported roles", () => {
   assert.equal(hasModerationRole(["MANAGER"]), true)

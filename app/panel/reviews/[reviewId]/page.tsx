@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation"
 import { ReviewDetail } from "@/components/moderation/review-detail"
-import { getModerationReview, ModerationApiError } from "@/lib/moderation-api"
-import { hasModerationRole, isManagerOnly } from "@/lib/moderation-types"
-import { deleteSession, getSession } from "@/lib/session"
+import { getModerationReview, ModerationApiError } from "@/lib/moderation/api"
+import { hasModerationRole, isManagerOnly } from "@/lib/moderation/types"
+import { deleteSession, getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale } from "@/lib/i18n"
-import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
+import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
 
 export default async function ReviewDetailPage({ params }: { params: Promise<{ reviewId: string }> }) {
   const session = await getSession()

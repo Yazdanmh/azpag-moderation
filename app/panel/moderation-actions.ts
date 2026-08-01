@@ -6,7 +6,7 @@ import {
   getNextModerationReview,
   ModerationApiError,
   submitModerationEvaluation,
-} from "@/lib/moderation-api"
+} from "@/lib/moderation/api"
 import {
   hasModerationRole,
   type ApiResult,
@@ -15,8 +15,8 @@ import {
   type ModerationReviewShownAcknowledgement,
   type QualityReportResponse,
   type SubmitHumanEvaluationResponse,
-} from "@/lib/moderation-types"
-import { deleteSession, getSession } from "@/lib/session"
+} from "@/lib/moderation/types"
+import { deleteSession, getSession } from "@/lib/auth/session"
 import { z } from "zod"
 
 async function authorizedSession() {

@@ -6,12 +6,12 @@ import { useFormStatus } from "react-dom"
 import { CameraIcon, LoaderCircleIcon } from "lucide-react"
 import { toast } from "sonner"
 import { updateProfile, type ProfileFormState } from "@/app/panel/profile/actions"
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { profileDictionaries } from "@/lib/profile-i18n"
+import { profileDictionaries } from "@/lib/profile/i18n"
 
 function SaveButton({ idle, pendingText }: { idle: string; pendingText: string }) {
   const { pending } = useFormStatus()

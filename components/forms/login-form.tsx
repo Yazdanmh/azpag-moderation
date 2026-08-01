@@ -12,13 +12,13 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { login, type LoginState } from "@/app/actions"
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { passwordRecoveryDictionaries } from "@/lib/password-recovery-i18n"
+import { passwordRecoveryDictionaries } from "@/lib/auth/password-recovery-i18n"
 
 function SubmitButton({ idle, pending: pendingText }: { idle: string; pending: string }) {
   const { pending } = useFormStatus()

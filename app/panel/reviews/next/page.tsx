@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { ReviewWorkspace } from "@/components/moderation/review-workspace"
-import { getNextModerationReview, ModerationApiError } from "@/lib/moderation-api"
-import { hasModerationRole, type ApiResult, type ModerationReview } from "@/lib/moderation-types"
-import { getSession } from "@/lib/session"
+import { getNextModerationReview, ModerationApiError } from "@/lib/moderation/api"
+import { hasModerationRole, type ApiResult, type ModerationReview } from "@/lib/moderation/types"
+import { getSession } from "@/lib/auth/session"
 import { isLocale } from "@/lib/i18n"
-import { moderationDictionaries } from "@/lib/moderation-i18n"
+import { moderationDictionaries } from "@/lib/moderation/i18n"
 
 export default async function NextReviewPage() {
   const session = await getSession()

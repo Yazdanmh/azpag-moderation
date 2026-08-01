@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CheckIcon, ChevronDownIcon, EyeIcon, XIcon } from "lucide-react"
-import type { ModerationReviewDetail } from "@/lib/moderation-types"
+import type { ModerationReviewDetail } from "@/lib/moderation/types"
 import { StatusBadge, personName, safeJson } from "./review-badges"
 import type { Locale } from "@/lib/i18n"
-import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
-import { localizedModerationDefinition } from "@/lib/moderation-definition-i18n"
-import { localizedGeneratedModerationReason } from "@/lib/moderation-reason-i18n"
+import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
+import { localizedModerationDefinition } from "@/lib/moderation/definition-i18n"
+import { localizedGeneratedModerationReason } from "@/lib/moderation/reason-i18n"
 
 export function ReviewDetail({ review, showPost = true, locale }: { review: ModerationReviewDetail; showPost?: boolean; locale: Locale }) {
   const t = moderationHistoryDictionaries[locale]

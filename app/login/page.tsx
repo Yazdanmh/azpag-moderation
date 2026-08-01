@@ -1,7 +1,7 @@
-import { LoginForm } from "@/components/login-form"
-import { LoginShowcase } from "@/components/login-showcase"
-import { LanguageSwitcher } from "@/components/language-switcher"
-import { getSession } from "@/lib/session"
+import { LoginForm } from "@/components/forms/login-form"
+import { LoginShowcase } from "@/components/auth/login-showcase"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 
 export default async function Page() {

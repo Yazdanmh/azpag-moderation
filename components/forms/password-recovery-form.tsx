@@ -13,12 +13,12 @@ import {
   resetStaffPassword,
   type PasswordRecoveryState,
 } from "@/app/actions"
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 import { Button } from "@/components/ui/button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { passwordRecoveryDictionaries } from "@/lib/password-recovery-i18n"
+import { passwordRecoveryDictionaries } from "@/lib/auth/password-recovery-i18n"
 
 function SubmitButton({ idle, pendingText }: { idle: string; pendingText: string }) {
   const { pending } = useFormStatus()

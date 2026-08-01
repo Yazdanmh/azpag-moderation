@@ -11,11 +11,11 @@ import {
   getModerationOperationalMetrics,
   getModerationQueueMetrics,
   ModerationApiError,
-} from "@/lib/moderation-api"
-import { moderationHistoryDictionaries } from "@/lib/moderation-history-i18n"
-import type { DurationDistribution, ModerationDecision, ModerationPerson } from "@/lib/moderation-types"
-import { isManagerOnly } from "@/lib/moderation-types"
-import { deleteSession, getSession } from "@/lib/session"
+} from "@/lib/moderation/api"
+import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
+import type { DurationDistribution, ModerationDecision, ModerationPerson } from "@/lib/moderation/types"
+import { isManagerOnly } from "@/lib/moderation/types"
+import { deleteSession, getSession } from "@/lib/auth/session"
 
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
 

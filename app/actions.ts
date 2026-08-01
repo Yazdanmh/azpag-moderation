@@ -1,12 +1,12 @@
 "use server";
 
-import { createSession, deleteSession } from "@/lib/session";
+import { createSession, deleteSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { dictionaries, isLocale } from "@/lib/i18n";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/api/http";
 import { decodeJwt } from "jose";
-import { passwordRecoveryDictionaries, type PasswordRecoveryDictionary } from "@/lib/password-recovery-i18n";
+import { passwordRecoveryDictionaries, type PasswordRecoveryDictionary } from "@/lib/auth/password-recovery-i18n";
 
 export type LoginState = {
   error?: {

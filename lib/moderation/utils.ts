@@ -1,4 +1,4 @@
-import type { ApiError } from "./moderation-types.ts"
+import type { ApiError } from "./types"
 
 export class ApiResponseError extends Error {
   readonly status: number

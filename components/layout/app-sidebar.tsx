@@ -4,10 +4,10 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ChartNoAxesCombinedIcon, FileCheck2Icon, LayoutDashboardIcon } from "lucide-react"
-import { useI18n } from "@/components/providers"
-import { hasModerationRole, isManagerOnly } from "@/lib/moderation-types"
+import { useI18n } from "@/components/providers/app-providers"
+import { hasModerationRole, isManagerOnly } from "@/lib/moderation/types"
 
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/components/layout/nav-user"
 import {
   Sidebar,
   SidebarContent,

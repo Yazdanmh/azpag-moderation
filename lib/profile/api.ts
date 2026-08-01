@@ -1,6 +1,6 @@
 import "server-only"
-import { authenticatedApiFetch } from "@/lib/api"
-import { parseApiResponse } from "@/lib/moderation-utils"
+import { authenticatedApiFetch } from "@/lib/api/http"
+import { parseApiResponse } from "@/lib/moderation/utils"
 
 export type ProfileImage = {
   id: string

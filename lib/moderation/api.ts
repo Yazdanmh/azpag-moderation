@@ -1,6 +1,6 @@
 import "server-only"
 
-import { authenticatedApiFetch } from "@/lib/api"
+import { authenticatedApiFetch } from "@/lib/api/http"
 import type {
   ModerationReview,
   ModerationReviewShownAcknowledgement,
@@ -15,8 +15,8 @@ import type {
   ModerationReviewsResponse,
   SubmitHumanEvaluationRequest,
   SubmitHumanEvaluationResponse,
-} from "@/lib/moderation-types"
-import { ApiResponseError, buildQueryString, parseApiResponse } from "@/lib/moderation-utils"
+} from "@/lib/moderation/types"
+import { ApiResponseError, buildQueryString, parseApiResponse } from "@/lib/moderation/utils"
 
 export { ApiResponseError as ModerationApiError }
 

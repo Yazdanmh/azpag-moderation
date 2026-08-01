@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { CheckCircle2Icon, ShieldCheckIcon } from "lucide-react"
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 
 export function LoginShowcase() {
   const { dictionary: t } = useI18n()

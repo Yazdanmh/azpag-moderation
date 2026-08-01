@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation"
 import { QualityReport } from "@/components/moderation/quality-report"
-import { getModerationQualityReport, ModerationApiError } from "@/lib/moderation-api"
-import { hasModerationRole, isManagerOnly, type ApiResult, type QualityReportResponse } from "@/lib/moderation-types"
-import { getSession } from "@/lib/session"
+import { getModerationQualityReport, ModerationApiError } from "@/lib/moderation/api"
+import { hasModerationRole, isManagerOnly, type ApiResult, type QualityReportResponse } from "@/lib/moderation/types"
+import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale } from "@/lib/i18n"
-import { moderationDictionaries } from "@/lib/moderation-i18n"
+import { moderationDictionaries } from "@/lib/moderation/i18n"
 import { DateRangeDialog } from "@/components/moderation/date-range-dialog"
 
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value

@@ -1,7 +1,7 @@
-import { ResetPasswordForm } from "@/components/password-recovery-form"
-import { LoginShowcase } from "@/components/login-showcase"
-import { LanguageSwitcher } from "@/components/language-switcher"
-import { getSession } from "@/lib/session"
+import { ResetPasswordForm } from "@/components/forms/password-recovery-form"
+import { LoginShowcase } from "@/components/auth/login-showcase"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { getSession } from "@/lib/auth/session"
 
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ email?: string | string[] }> }) {
   const params = await searchParams

@@ -2,7 +2,7 @@
 
 import { logout } from "@/app/actions"
 import Link from "next/link"
-import { useI18n } from "@/components/providers"
+import { useI18n } from "@/components/providers/app-providers"
 import {
   Avatar,
   AvatarFallback,
@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { EllipsisVerticalIcon, LogOutIcon, SettingsIcon } from "lucide-react"
-import { profileDictionaries } from "@/lib/profile-i18n"
+import { profileDictionaries } from "@/lib/profile/i18n"
 
 export function NavUser({
   user,

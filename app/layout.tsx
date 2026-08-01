@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import { Providers } from "@/components/providers/app-providers";
 import { cookies } from "next/headers";
 import { dictionaries, directionFor, isLocale } from "@/lib/i18n";
 

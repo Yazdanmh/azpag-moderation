@@ -2,8 +2,8 @@
 
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { LanguageSwitcher } from "@/components/language-switcher"
-import { useI18n } from "@/components/providers"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useI18n } from "@/components/providers/app-providers"
 
 export function SiteHeader() {
   const { dictionary: t } = useI18n()

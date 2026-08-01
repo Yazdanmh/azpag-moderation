@@ -1,7 +1,7 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
+import { AppSidebar } from "@/components/layout/app-sidebar"
+import { SiteHeader } from "@/components/layout/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { getSession } from "@/lib/session"
+import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
 
 export default async function PanelLayout({

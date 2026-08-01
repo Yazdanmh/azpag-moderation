@@ -7,13 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ProfileEditForm } from "@/components/profile-edit-form"
+import { ProfileEditForm } from "@/components/forms/profile-edit-form"
 import { ResultState } from "@/components/moderation/shared"
-import { deleteSession, getSession } from "@/lib/session"
+import { deleteSession, getSession } from "@/lib/auth/session"
 import { isLocale } from "@/lib/i18n"
-import { profileDictionaries } from "@/lib/profile-i18n"
-import { getMyProfile, profileImageUrl } from "@/lib/profile-api"
-import { ApiResponseError } from "@/lib/moderation-utils"
+import { profileDictionaries } from "@/lib/profile/i18n"
+import { getMyProfile, profileImageUrl } from "@/lib/profile/api"
+import { ApiResponseError } from "@/lib/moderation/utils"
 
 export default async function ProfilePage() {
   const session = await getSession()

@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { isLocale } from "@/lib/i18n"
-import { profileDictionaries } from "@/lib/profile-i18n"
-import { getMyProfile, profileImageUrl, updateMyProfile, uploadProfileImage } from "@/lib/profile-api"
-import { createSession, deleteSession, getSession } from "@/lib/session"
-import { ApiResponseError } from "@/lib/moderation-utils"
+import { profileDictionaries } from "@/lib/profile/i18n"
+import { getMyProfile, profileImageUrl, updateMyProfile, uploadProfileImage } from "@/lib/profile/api"
+import { createSession, deleteSession, getSession } from "@/lib/auth/session"
+import { ApiResponseError } from "@/lib/moderation/utils"
 
 export type ProfileFormState = {
   error?: { title: string; description: string }
