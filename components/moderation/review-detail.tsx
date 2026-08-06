@@ -10,6 +10,8 @@ import type { Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
 import { localizedModerationDefinition } from "@/lib/moderation/definition-i18n"
 import { localizedGeneratedModerationReason } from "@/lib/moderation/reason-i18n"
+import { CopyJsonButton } from "./copy-json-button"
+import { PostSnapshotViewer } from "./post-snapshot-viewer"
 
 export function ReviewDetail({ review, showPost = true, locale }: { review: ModerationReviewDetail; showPost?: boolean; locale: Locale }) {
   const t = moderationHistoryDictionaries[locale]
@@ -117,7 +119,9 @@ export function ReviewDetail({ review, showPost = true, locale }: { review: Mode
         }) : <p className="text-muted-foreground">{t.noItems}</p>}
       </div>
     </CollapsibleCard>
-    <CollapsibleCard title={t.snapshot} description={t.snapshotDescription}><JsonViewer value={review.postSnapshot} locale={locale} className="max-h-[48rem]" /></CollapsibleCard>
+    <CollapsibleCard title={t.snapshot} description={t.snapshotDescription}>
+      <PostSnapshotViewer snapshot={review.postSnapshot} locale={locale} json={<JsonViewer value={review.postSnapshot} locale={locale} className="max-h-[48rem]" />} />
+    </CollapsibleCard>
   </div>
 }
 
@@ -142,18 +146,22 @@ function JsonBlock({ title, value, locale }: { title: string; value: unknown; lo
 }
 
 export function JsonViewer({ value, locale, className }: { value: unknown; locale: Locale; className?: string }) {
-  const lines = prettyJson(value).split("\n")
-  return <div
-    dir="ltr"
-    lang={locale}
-    className={`overflow-auto rounded-md border border-slate-200 bg-white py-3 font-mono text-xs leading-6 text-slate-800 ${className ?? ""}`}
-  >
-    <code className="block min-w-max">
-      {lines.map((line, index) => <div key={index} className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-3 hover:bg-slate-50">
-        <span className="select-none border-e border-slate-200 pe-3 text-end text-slate-400">{index + 1}</span>
-        <span className="ps-4 whitespace-pre"><JsonLine line={line} /></span>
-      </div>)}
-    </code>
+  const json = prettyJson(value)
+  const lines = json.split("\n")
+  return <div className="relative">
+    <CopyJsonButton value={json} locale={locale} />
+    <div
+      dir="ltr"
+      lang={locale}
+      className={`overflow-auto rounded-md border border-slate-200 bg-white py-3 pt-12 font-mono text-xs leading-6 text-slate-800 ${className ?? ""}`}
+    >
+      <code className="block min-w-max">
+        {lines.map((line, index) => <div key={index} className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-3 hover:bg-slate-50">
+          <span className="select-none border-e border-slate-200 pe-3 text-end text-slate-400">{index + 1}</span>
+          <span className="ps-4 whitespace-pre"><JsonLine line={line} /></span>
+        </div>)}
+      </code>
+    </div>
   </div>
 }
 
