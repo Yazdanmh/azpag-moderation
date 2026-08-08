@@ -355,15 +355,24 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
     : null
   const ruleDescription = localizedRuleDescription(currentItem?.ruleDescription, locale)
   const confirmCopy = confirmationCopy(locale)
+  const firstImage = Array.isArray(post.images) ? post.images[0] : undefined
 
   return (
     <div className="grid w-full items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle className="text-xl">{post.title}</CardTitle>
-              <CardDescription>{t.reviewContextDescription}</CardDescription>
+            <div className="flex min-w-0 items-start gap-3">
+              {firstImage && (
+                <a href={firstImage.url} target="_blank" rel="noreferrer" className="block size-32 shrink-0 overflow-hidden rounded-md border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={firstImage.url} alt={post.title} className="size-full object-cover" />
+                </a>
+              )}
+              <div className="min-w-0">
+                <CardTitle className="break-words text-xl">{post.title}</CardTitle>
+                <CardDescription>{t.reviewContextDescription}</CardDescription>
+              </div>
             </div>
             <Button variant="outline" onClick={refresh} disabled={pending}><RefreshCwIcon />{t.refresh}</Button>
           </div>
