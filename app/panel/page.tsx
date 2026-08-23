@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { BanIcon, BotIcon, BrainCircuitIcon, FileCheck2Icon, ListTodoIcon, PencilLineIcon, SendIcon, UsersIcon, type LucideIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -60,10 +61,10 @@ export default async function DashboardPage({
 
   const { queue, operations } = data
   const volumeCards = [
-    { label: t.queueCount, value: number(queue.waitingReviews, locale), description: queue.oldestWaitingMs === null ? t.noData : `${t.oldestWait}: ${duration(queue.oldestWaitingMs, locale, t)}`, icon: ListTodoIcon },
-    { label: t.completedReviews, value: number(operations.volume.completedReviews, locale), description: t.selectedPeriod, icon: FileCheck2Icon },
-    { label: t.aiOnlyReviews, value: percentage(operations.volume.aiOnlyPercentage, locale, t.noData), description: `${number(operations.volume.aiOnlyReviews, locale)} ${t.reviews}`, icon: BrainCircuitIcon },
-    { label: t.humanParticipation, value: percentage(operations.volume.humanParticipationPercentage, locale, t.noData), description: `${number(operations.volume.humanParticipationReviews, locale)} ${t.reviews}`, icon: UsersIcon },
+    { label: t.queueCount, value: number(queue.waitingReviews, locale), description: queue.oldestWaitingMs === null ? t.noData : `${t.oldestWait}: ${duration(queue.oldestWaitingMs, locale, t)}`, icon: ListTodoIcon, href: reviewHref({ status: "HUMAN_REVIEW_QUEUED" }) },
+    { label: t.completedReviews, value: number(operations.volume.completedReviews, locale), description: t.selectedPeriod, icon: FileCheck2Icon, href: reviewHref({ status: "DECIDED" }) },
+    { label: t.aiOnlyReviews, value: percentage(operations.volume.aiOnlyPercentage, locale, t.noData), description: `${number(operations.volume.aiOnlyReviews, locale)} ${t.reviews}`, icon: BrainCircuitIcon, href: reviewHref({ status: "DECIDED", participation: "AI_ONLY" }) },
+    { label: t.humanParticipation, value: percentage(operations.volume.humanParticipationPercentage, locale, t.noData), description: `${number(operations.volume.humanParticipationReviews, locale)} ${t.reviews}`, icon: UsersIcon, href: reviewHref({ status: "DECIDED", participation: "HUMAN" }) },
   ]
   const decisionMap = new Map(operations.decisions.map((item) => [item.decision, item]))
   const hasOperationalData = queue.waitingReviews > 0 || operations.volume.completedReviews > 0
@@ -92,8 +93,8 @@ export default async function DashboardPage({
         <ResultState title={t.noOperationsData} description={t.noOperationsDataDescription} fill />
       ) : <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {volumeCards.map(({ label, value, description, icon: Icon }) => (
-          <Card key={label}>
+        {volumeCards.map(({ label, value, description, icon: Icon, href }) => {
+          const card = <Card className={href ? "h-full transition-colors hover:border-primary/40 hover:bg-primary/[0.02]" : "h-full"}>
             <CardHeader>
               <div className="flex items-center justify-between gap-3">
                 <CardDescription>{label}</CardDescription>
@@ -105,7 +106,8 @@ export default async function DashboardPage({
               <CardDescription>{description}</CardDescription>
             </CardHeader>
           </Card>
-        ))}
+          return href ? <Link key={label} href={href} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{card}</Link> : <div key={label}>{card}</div>
+        })}
       </div>
 
       <Card>
@@ -125,9 +127,9 @@ export default async function DashboardPage({
       <Card>
         <CardHeader><CardTitle>{t.decisionDistribution}</CardTitle><CardDescription>{number(operations.volume.completedReviews, locale)} {t.completedReviews}</CardDescription></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Decision label={t.publishDecision} value={decisionMap.get("PUBLISH")} locale={locale} noData={t.noData} icon={SendIcon} />
-          <Decision label={t.rejectDecision} value={decisionMap.get("REJECT")} locale={locale} noData={t.noData} icon={BanIcon} />
-          <Decision label={t.needsChanges} value={decisionMap.get("NEEDS_CHANGES")} locale={locale} noData={t.noData} icon={PencilLineIcon} />
+          <Decision label={t.publishDecision} value={decisionMap.get("PUBLISH")} locale={locale} noData={t.noData} icon={SendIcon} href={reviewHref({ status: "DECIDED", decision: "PUBLISH" })} />
+          <Decision label={t.rejectDecision} value={decisionMap.get("REJECT")} locale={locale} noData={t.noData} icon={BanIcon} href={reviewHref({ status: "DECIDED", decision: "REJECT" })} />
+          <Decision label={t.needsChanges} value={decisionMap.get("NEEDS_CHANGES")} locale={locale} noData={t.noData} icon={PencilLineIcon} href={reviewHref({ status: "DECIDED", decision: "NEEDS_CHANGES" })} />
         </CardContent>
       </Card>
 
@@ -151,9 +153,10 @@ function TimingRow({ label, value, locale, t }: { label: string; value: Duration
   return <TableRow><TableCell className="font-medium">{label}</TableCell><TableCell>{number(value.count, locale)}</TableCell><TableCell>{duration(value.medianMs, locale, t)}</TableCell><TableCell>{duration(value.p90Ms, locale, t)}</TableCell><TableCell>{duration(value.p95Ms, locale, t)}</TableCell></TableRow>
 }
 
-function Decision({ label, value, locale, noData, icon: Icon }: { label: string; value?: { decision: ModerationDecision; count: number; percentage: number | null }; locale: Locale; noData: string; icon: LucideIcon }) {
+function Decision({ label, value, locale, noData, icon: Icon, href }: { label: string; value?: { decision: ModerationDecision; count: number; percentage: number | null }; locale: Locale; noData: string; icon: LucideIcon; href: string }) {
   return (
-    <Card>
+    <Link href={href} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Card className="h-full transition-colors hover:border-primary/40 hover:bg-primary/[0.02]">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardDescription>{label}</CardDescription>
@@ -165,7 +168,15 @@ function Decision({ label, value, locale, noData, icon: Icon }: { label: string;
         <CardDescription className="text-primary">{percentage(value?.percentage ?? null, locale, noData)}</CardDescription>
       </CardHeader>
     </Card>
+    </Link>
   )
+}
+
+function reviewHref({ status, decision, participation }: { status: "HUMAN_REVIEW_QUEUED" | "DECIDED"; decision?: ModerationDecision; participation?: "AI_ONLY" | "HUMAN" }) {
+  const params = new URLSearchParams({ status, type: "STANDARD" })
+  if (decision) params.set("decision", decision)
+  if (participation) params.set("participation", participation)
+  return `/panel/reviews?${params.toString()}`
 }
 
 function ReviewerRow({ reviewer, count, timing, locale, t }: { reviewer: ModerationPerson; count: number; timing: DurationDistribution; locale: Locale; t: typeof moderationHistoryDictionaries.en }) {
