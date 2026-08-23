@@ -54,6 +54,10 @@ export function AppSidebar({
       )
     }
 
+    if (href === "/panel/quality") {
+      return pathname.startsWith("/panel/quality/")
+    }
+
     return false
   }
 

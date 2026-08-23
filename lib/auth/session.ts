@@ -5,9 +5,9 @@ import { cookies } from "next/headers"
 
 const DEVELOPMENT_COOKIE_NAME = "azpag_session"
 const PRODUCTION_COOKIE_NAME = "__Host-azpag_session"
-const SESSION_DURATION = 60 * 60 * 8
+const MAX_REFRESH_DURATION_SECONDS = 60 * 60 * 24 * 365
 
-function cookieName() {
+export function cookieName() {
   return process.env.NODE_ENV === "production"
     ? PRODUCTION_COOKIE_NAME
     : DEVELOPMENT_COOKIE_NAME
@@ -32,46 +32,56 @@ export type Session = {
   name: string
   image: string
   accessToken: string
+  refreshToken: string
+  accessExpiresAt: string
+  refreshExpiresAt: string
   roles: string[]
 }
 
-export async function createSession(
-  profile: { email: string; name: string; image: string; roles: string[] },
-  accessToken: string,
-) {
-  const token = await new EncryptJWT({ ...profile, accessToken })
-    .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION}s`)
-    .encrypt(await encryptionKey())
+export type AuthTokens = Pick<Session, "accessToken" | "refreshToken" | "accessExpiresAt" | "refreshExpiresAt">
 
-  const cookieStore = await cookies()
-  cookieStore.set(cookieName(), token, {
+type SessionProfile = Pick<Session, "email" | "name" | "image" | "roles">
+
+export function sessionCookieOptions(refreshExpiresAt: string) {
+  const remainingSeconds = Math.max(1, Math.floor((Date.parse(refreshExpiresAt) - Date.now()) / 1000))
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: SESSION_DURATION,
+    sameSite: "strict" as const,
+    maxAge: Math.min(MAX_REFRESH_DURATION_SECONDS, remainingSeconds),
     path: "/",
-  })
+  }
 }
 
-export async function getSession(): Promise<Session | null> {
-  const token = (await cookies()).get(cookieName())?.value
-  if (!token) return null
+export async function encodeSession(session: Session) {
+  const refreshExpiration = Math.floor(Date.parse(session.refreshExpiresAt) / 1000)
+  if (!Number.isFinite(refreshExpiration)) throw new Error("The refresh-token expiration is invalid.")
+  return new EncryptJWT(session)
+    .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
+    .setIssuedAt()
+    .setExpirationTime(refreshExpiration)
+    .encrypt(await encryptionKey())
+}
 
+export async function decodeSession(token: string): Promise<Session | null> {
   try {
     const { payload } = await jwtDecrypt(token, await encryptionKey(), {
       keyManagementAlgorithms: ["dir"],
       contentEncryptionAlgorithms: ["A256GCM"],
     })
-
     return typeof payload.email === "string" &&
-      typeof payload.accessToken === "string"
+      typeof payload.accessToken === "string" &&
+      typeof payload.refreshToken === "string" &&
+      typeof payload.accessExpiresAt === "string" &&
+      typeof payload.refreshExpiresAt === "string"
       ? {
           email: payload.email,
           name: typeof payload.name === "string" ? payload.name : payload.email,
           image: typeof payload.image === "string" ? payload.image : "",
           accessToken: payload.accessToken,
+          refreshToken: payload.refreshToken,
+          accessExpiresAt: payload.accessExpiresAt,
+          refreshExpiresAt: payload.refreshExpiresAt,
           roles: Array.isArray(payload.roles)
             ? payload.roles.filter((role): role is string => typeof role === "string")
             : [],
@@ -80,6 +90,29 @@ export async function getSession(): Promise<Session | null> {
   } catch {
     return null
   }
+}
+
+export async function createSession(
+  profile: SessionProfile,
+  tokens: AuthTokens,
+) {
+  const session = { ...profile, ...tokens }
+  const token = await encodeSession(session)
+  const cookieStore = await cookies()
+  cookieStore.set(cookieName(), token, sessionCookieOptions(tokens.refreshExpiresAt))
+}
+
+export async function replaceSession(session: Session) {
+  const token = await encodeSession(session)
+  const cookieStore = await cookies()
+  cookieStore.set(cookieName(), token, sessionCookieOptions(session.refreshExpiresAt))
+}
+
+export async function getSession(): Promise<Session | null> {
+  const token = (await cookies()).get(cookieName())?.value
+  if (!token) return null
+
+  return decodeSession(token)
 }
 
 export async function deleteSession() {

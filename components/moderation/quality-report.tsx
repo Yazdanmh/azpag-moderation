@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BadgeCheckIcon, BotIcon, CheckCheckIcon, CircleGaugeIcon, FlaskConicalIcon, PercentIcon, Settings2Icon, TestTube2Icon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react"
+import { BadgeCheckIcon, BotIcon, CheckCheckIcon, CircleGaugeIcon, ExternalLinkIcon, FlaskConicalIcon, PercentIcon, Settings2Icon, TestTube2Icon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react"
 import { useI18n } from "@/components/providers/app-providers"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { localizedGeneratedModerationReason } from "@/lib/moderation/reason-i18n
 import { ModerationLoading, ResultState } from "./shared"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { qualityDisagreementCopy } from "./quality-disagreement-detail"
 
 function OutcomeBadge({ value, owner, noData, labels }: { value: EvaluationOutcome | null; owner: string; noData: string; labels: Record<EvaluationOutcome, string> }) {
   if (!value) return <span className="text-muted-foreground">{noData}</span>
@@ -116,7 +117,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
         <CardContent>
           {recent.length ? (
             <Table>
-              <TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.definition} / {t.field}</TableHead><TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead><TableHead>{t.completed}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.definition} / {t.field}</TableHead><TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead><TableHead>{t.completed}</TableHead><TableHead><span className="sr-only">Details</span></TableHead></TableRow></TableHeader>
               <TableBody>{recent.map((row) => {
                 const localized = localizedModerationDefinition(row, locale)
                 return (
@@ -129,6 +130,7 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
                   <TableCell><OutcomeBadge value={row.human?.outcome ?? null} owner={t.human} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell className="max-w-72 whitespace-normal">{row.human ? localizedQualityReason(row.human.reason, row.human.reasonTranslations, locale) || t.noData : t.noData}</TableCell>
                   <TableCell>{row.completedAt ? new Date(row.completedAt).toLocaleString(locale) : t.noData}</TableCell>
+                  <TableCell><Link href={`/panel/quality/disagreements/${encodeURIComponent(row.reviewItemId)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>{qualityDisagreementCopy[locale].view}<ExternalLinkIcon /></Link></TableCell>
                 </TableRow>
               )})}</TableBody>
             </Table>

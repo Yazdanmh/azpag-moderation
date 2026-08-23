@@ -17,6 +17,9 @@ export default async function NextReviewPage() {
   try {
     initial = { ok: true, data: await getNextModerationReview(session.accessToken) }
   } catch (error) {
+    if (error instanceof ModerationApiError && error.status === 401) {
+      redirect("/auth/refresh?returnTo=%2Fpanel%2Freviews%2Fnext")
+    }
     initial = error instanceof ModerationApiError
       ? { ok: false, status: error.status, message: error.message }
       : { ok: false, status: 500, message: t.serviceError }

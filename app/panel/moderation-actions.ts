@@ -16,7 +16,8 @@ import {
   type QualityReportResponse,
   type SubmitHumanEvaluationResponse,
 } from "@/lib/moderation/types"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { deleteSession, getSession, replaceSession } from "@/lib/auth/session"
+import { refreshSession, TokenRefreshError } from "@/lib/auth/refresh"
 import { z } from "zod"
 
 async function authorizedSession() {
@@ -35,7 +36,22 @@ async function run<T>(operation: (token: string) => Promise<T>): Promise<ApiResu
     return { ok: true, data: await operation(auth.session.accessToken) }
   } catch (error) {
     if (error instanceof ModerationApiError) {
-      if (error.status === 401) await deleteSession()
+      if (error.status === 401) {
+        try {
+          const refreshed = await refreshSession(auth.session)
+          await replaceSession(refreshed)
+          return { ok: true, data: await operation(refreshed.accessToken) }
+        } catch (refreshError) {
+          if (refreshError instanceof TokenRefreshError && [400, 401, 403].includes(refreshError.status)) {
+            await deleteSession()
+          }
+          return {
+            ok: false,
+            status: refreshError instanceof TokenRefreshError ? refreshError.status : 500,
+            message: refreshError instanceof Error ? refreshError.message : "The session could not be refreshed.",
+          }
+        }
+      }
       return { ok: false, status: error.status, message: error.message }
     }
     return { ok: false, status: 500, message: "The moderation service is unavailable. Please try again." }

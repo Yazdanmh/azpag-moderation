@@ -6,7 +6,7 @@ import { z } from "zod"
 import { isLocale } from "@/lib/i18n"
 import { profileDictionaries } from "@/lib/profile/i18n"
 import { getMyProfile, profileImageUrl, updateMyProfile, uploadProfileImage } from "@/lib/profile/api"
-import { createSession, deleteSession, getSession } from "@/lib/auth/session"
+import { deleteSession, getSession, replaceSession } from "@/lib/auth/session"
 import { ApiResponseError } from "@/lib/moderation/utils"
 
 export type ProfileFormState = {
@@ -53,12 +53,13 @@ export async function updateProfile(
       : profile.role
         ? [profile.role]
         : session.roles
-    await createSession({
+    await replaceSession({
+      ...session,
       email: profile.email || session.email,
       name: profile.first_name?.trim() || session.name,
       image: profileImageUrl(profile) || session.image,
       roles,
-    }, session.accessToken)
+    })
     revalidatePath("/panel/profile")
     return { success: { title: t.updateSuccess, description: t.updateSuccessDescription } }
   } catch (error) {

@@ -1,6 +1,6 @@
 "use server";
 
-import { createSession, deleteSession } from "@/lib/auth/session";
+import { createSession, deleteSession, type AuthTokens } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { dictionaries, isLocale } from "@/lib/i18n";
@@ -46,12 +46,18 @@ const resetPasswordSchema = z.object({
 
 type LoginResponse = {
   access_token?: string;
+  refresh_token?: string;
+  access_expires_at?: string;
+  refresh_expires_at?: string;
   accessToken?: string;
   token?: string;
   message?: string;
   detail?: string;
   data?: {
     access_token?: string;
+    refresh_token?: string;
+    access_expires_at?: string;
+    refresh_expires_at?: string;
     accessToken?: string;
     token?: string;
     user?: ApiUser;
@@ -98,6 +104,19 @@ function getAccessToken(response: LoginResponse) {
     response.data?.accessToken ??
     response.data?.token
   );
+}
+
+function getAuthTokens(response: LoginResponse): AuthTokens | null {
+  const data = response.data ?? response
+  const accessToken = getAccessToken(response)
+  const refreshToken = data.refresh_token
+  const accessExpiresAt = data.access_expires_at
+  const refreshExpiresAt = data.refresh_expires_at
+  return accessToken && typeof refreshToken === "string" &&
+    typeof accessExpiresAt === "string" && typeof refreshExpiresAt === "string" &&
+    Number.isFinite(Date.parse(accessExpiresAt)) && Number.isFinite(Date.parse(refreshExpiresAt))
+    ? { accessToken, refreshToken, accessExpiresAt, refreshExpiresAt }
+    : null
 }
 
 function getUserProfile(response: LoginResponse, fallbackEmail: string) {
@@ -319,13 +338,13 @@ export async function login(
     return loginError(t.loginErrorTitle, getLoginError(response.status, t));
   }
 
-  const accessToken = getAccessToken(body);
-  if (!accessToken || accessToken.length > 2048) {
+  const tokens = getAuthTokens(body);
+  if (!tokens || tokens.accessToken.length > 4096 || tokens.refreshToken.length > 4096) {
     return loginError(t.loginErrorTitle, t.missingToken);
   }
 
   const profile = getUserProfile(body, parsed.data.email.toLowerCase());
-  await createSession(profile, accessToken);
+  await createSession(profile, tokens);
   redirect(profile.roles.includes("MANAGER") &&
     !profile.roles.includes("ADMIN") &&
     !profile.roles.includes("SUPERADMIN")

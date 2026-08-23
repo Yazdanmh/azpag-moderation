@@ -15,7 +15,7 @@ import {
 import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
 import type { DurationDistribution, ModerationDecision, ModerationPerson } from "@/lib/moderation/types"
 import { isManagerOnly } from "@/lib/moderation/types"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { getSession } from "@/lib/auth/session"
 
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
 
@@ -48,8 +48,7 @@ export default async function DashboardPage({
     data = { queue, operations }
   } catch (error) {
     if (error instanceof ModerationApiError && error.status === 401) {
-      await deleteSession()
-      redirect("/login")
+      redirect("/auth/refresh?returnTo=%2Fpanel")
     }
     const message = error instanceof ModerationApiError ? error.message : t.loadError
     return (

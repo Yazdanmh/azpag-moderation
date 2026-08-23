@@ -135,6 +135,64 @@ export interface QualityDisagreement {
   } | null
 }
 
+export interface QualityDisagreementDetail {
+  disagreement: {
+    reviewItemId: string
+    definitionId: string
+    ruleId: string
+    field: string
+    decisionType: ModerationDecisionType
+    sequence: number
+    qualityAgreement: false
+    completedAt: string | null
+  }
+  post: ModerationHistoryPost & {
+    author?: ModerationPerson
+    images: NonNullable<ModerationHistoryPost["images"]>
+    categories: NonNullable<ModerationHistoryPost["categories"]>
+    fieldValues: NonNullable<ModerationHistoryPost["fieldValues"]>
+    features: NonNullable<ModerationHistoryPost["features"]>
+  }
+  ai: {
+    evaluationId: string
+    outcome: EvaluationOutcome
+    confidence: number
+    reason: string | null
+    reasonTranslations: Record<string, string> | null
+    evidence: unknown
+    model: string | null
+    modelVersion: string | null
+    promptVersion: string | null
+    createdAt: string
+  } | null
+  human: {
+    evaluationId: string
+    outcome: EvaluationOutcome
+    reason: string | null
+    evaluatorId: string | null
+    createdAt: string
+    reviewer: {
+      id: string
+      firstName: string | null
+      lastName: string | null
+      avatar: unknown
+    } | null
+  } | null
+  sourceReview: {
+    id: string
+    status: string
+    finalDecision: string | null
+    postRevision: number
+  } | null
+  qualityReview: {
+    id: string
+    status: string
+    assignedAt: string | null
+    shownAt: string | null
+    completedAt: string | null
+  }
+}
+
 export interface QualityReportResponse {
   range: {
     dateFrom: string | null
@@ -432,6 +490,23 @@ export interface ModerationHistoryPost {
   published_at: string | null
   deletedAt: string | null
   moderation_reason: ModerationDecisionReason[] | { reasons?: ModerationDecisionReason[] } | null
+  address?: {
+    id: string
+    address: string | null
+    region: string | null
+    country: string | null
+    coordinates: string | null
+    province?: { id: string; name: string; translations?: Array<{ language: string; value: string }> } | null
+    district?: { id: string; name: string; translations?: Array<{ language: string; value: string }> } | null
+  } | null
+  contact?: {
+    id?: string
+    phone?: string | null
+    whatsapp?: string | null
+    facebook?: string | null
+    instagram?: string | null
+    website?: string | null
+  } | null
   author?: ModerationPerson
   images?: Array<{
     id: string

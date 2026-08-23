@@ -9,6 +9,7 @@ import type {
   ModerationQualityQuery,
   ModerationQueueMetrics,
   QualityReportResponse,
+  QualityDisagreementDetail,
   ModerationPostHistory,
   ModerationReviewDetail,
   ModerationReviewsQuery,
@@ -66,6 +67,18 @@ export async function getModerationQualityReport(
   return parseApiResponse<QualityReportResponse>(
     await authenticatedApiFetch(
       `/api/moderation/quality/report${buildQueryString(paginatedQuery)}`,
+      accessToken,
+    ),
+  )
+}
+
+export async function getModerationQualityDisagreement(
+  accessToken: string,
+  reviewItemId: string,
+) {
+  return parseApiResponse<QualityDisagreementDetail>(
+    await authenticatedApiFetch(
+      `/api/moderation/quality/disagreements/${encodeURIComponent(reviewItemId)}`,
       accessToken,
     ),
   )

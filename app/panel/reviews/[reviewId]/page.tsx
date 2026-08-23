@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { ReviewDetail } from "@/components/moderation/review-detail"
 import { getModerationReview, ModerationApiError } from "@/lib/moderation/api"
 import { hasModerationRole, isManagerOnly } from "@/lib/moderation/types"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
@@ -19,7 +19,7 @@ export default async function ReviewDetailPage({ params }: { params: Promise<{ r
   let review
   try { review = await getModerationReview(session.accessToken, reviewId) }
   catch (error) {
-    if (error instanceof ModerationApiError && error.status === 401) { await deleteSession(); redirect("/login") }
+    if (error instanceof ModerationApiError && error.status === 401) redirect(`/auth/refresh?returnTo=${encodeURIComponent(`/panel/reviews/${reviewId}`)}`)
     if (error instanceof ModerationApiError && error.status === 404) notFound()
     throw error
   }

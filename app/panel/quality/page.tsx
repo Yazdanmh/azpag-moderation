@@ -37,6 +37,12 @@ export default async function QualityPage({
   try {
     initial = { ok: true, data: await getModerationQualityReport(session.accessToken, query) }
   } catch (error) {
+    if (error instanceof ModerationApiError && error.status === 401) {
+      const returnParams = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+      if (dateFrom) returnParams.set("dateFrom", dateFrom)
+      if (dateTo) returnParams.set("dateTo", dateTo)
+      redirect(`/auth/refresh?returnTo=${encodeURIComponent(`/panel/quality?${returnParams}`)}`)
+    }
     initial = error instanceof ModerationApiError
       ? { ok: false, status: error.status, message: error.message }
       : { ok: false, status: 500, message: "The moderation service is unavailable." }

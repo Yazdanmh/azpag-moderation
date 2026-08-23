@@ -10,7 +10,7 @@ import { ResultState } from "@/components/moderation/shared"
 import { StatusBadge, personName } from "@/components/moderation/review-badges"
 import { getModerationReviews, ModerationApiError } from "@/lib/moderation/api"
 import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation/types"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale, type Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
@@ -79,8 +79,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     response = await getModerationReviews(session.accessToken, query)
   } catch (error) {
     if (error instanceof ModerationApiError && error.status === 401) {
-      await deleteSession()
-      redirect("/login")
+      redirect("/auth/refresh?returnTo=%2Fpanel%2Freviews")
     }
     const message = error instanceof ModerationApiError ? error.message : t.loadError
     return (

@@ -10,7 +10,7 @@ import { PostImageGallery } from "@/components/moderation/post-image-gallery"
 import { StatusBadge, safeJson } from "@/components/moderation/review-badges"
 import { getModerationPostHistory, ModerationApiError } from "@/lib/moderation/api"
 import { hasModerationRole, isManagerOnly } from "@/lib/moderation/types"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale, type Locale } from "@/lib/i18n"
 import { moderationHistoryDictionaries } from "@/lib/moderation/history-i18n"
@@ -38,7 +38,7 @@ export default async function PostHistoryPage({ params }: { params: Promise<{ po
   let history
   try { history = await getModerationPostHistory(session.accessToken, postId) }
   catch (error) {
-    if (error instanceof ModerationApiError && error.status === 401) { await deleteSession(); redirect("/login") }
+    if (error instanceof ModerationApiError && error.status === 401) redirect(`/auth/refresh?returnTo=${encodeURIComponent(`/panel/posts/${postId}`)}`)
     if (error instanceof ModerationApiError && error.status === 404) notFound()
     throw error
   }

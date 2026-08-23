@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ProfileEditForm } from "@/components/forms/profile-edit-form"
 import { ResultState } from "@/components/moderation/shared"
-import { deleteSession, getSession } from "@/lib/auth/session"
+import { getSession } from "@/lib/auth/session"
 import { isLocale } from "@/lib/i18n"
 import { profileDictionaries } from "@/lib/profile/i18n"
 import { getMyProfile, profileImageUrl } from "@/lib/profile/api"
@@ -26,8 +26,7 @@ export default async function ProfilePage() {
     profile = await getMyProfile(session.accessToken)
   } catch (error) {
     if (error instanceof ApiResponseError && error.status === 401) {
-      await deleteSession()
-      redirect("/login")
+      redirect("/auth/refresh?returnTo=%2Fpanel%2Fprofile")
     }
     return <main className="flex flex-1 p-4 md:p-6"><ResultState title={t.loadError} description={error instanceof Error ? error.message : t.loadError} retry fill /></main>
   }
