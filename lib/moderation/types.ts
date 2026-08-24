@@ -294,6 +294,7 @@ export type ModerationReviewStatus =
 export type ModerationReviewType = "STANDARD" | "QUALITY_SAMPLE"
 export type ModerationDecision = "PUBLISH" | "REJECT" | "NEEDS_CHANGES"
 export type ModerationReviewParticipation = "AI_ONLY" | "HUMAN"
+export type ModerationPostAuthorGroup = "USERS" | "SERVICE_TEAM"
 export type ModerationPostStatus =
   | "PUBLISHED" | "PENDING" | "DRAFT" | "ARCHIVED" | "REJECTED" | "NEEDS_CHANGES"
 export type ReviewItemStatus = "PENDING" | "EVALUATED" | "HUMAN_REVIEW_REQUIRED" | "NOT_EVALUATED"
@@ -569,6 +570,7 @@ export interface ModerationReviewsQuery {
   decision?: ModerationDecision
   postStatus?: ModerationPostStatus
   participation?: ModerationReviewParticipation
+  authorGroup?: ModerationPostAuthorGroup
   reviewerId?: string
   dateFrom?: string
   dateTo?: string

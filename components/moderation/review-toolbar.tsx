@@ -120,7 +120,11 @@ export function ReviewToolbar({
                   <label className="text-sm font-medium">{filter.label}</label>
                   <Select name={filter.name} defaultValue={filter.value ?? null}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={filter.label} />
+                      <SelectValue placeholder={filter.label}>
+                        {(value: string | null) => value
+                          ? optionLabels[value] ?? value.replaceAll("_", " ")
+                          : filter.label}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent align="start">
                       <SelectItem value={null}>{filter.label}</SelectItem>

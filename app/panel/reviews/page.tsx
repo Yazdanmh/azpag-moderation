@@ -9,7 +9,7 @@ import { ReviewToolbar } from "@/components/moderation/review-toolbar"
 import { ResultState } from "@/components/moderation/shared"
 import { StatusBadge, personName } from "@/components/moderation/review-badges"
 import { getModerationReviews, ModerationApiError } from "@/lib/moderation/api"
-import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewParticipation, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation/types"
+import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostAuthorGroup, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewParticipation, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation/types"
 import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale, type Locale } from "@/lib/i18n"
@@ -24,6 +24,7 @@ const types: ModerationReviewType[] = ["STANDARD", "QUALITY_SAMPLE"]
 const decisions: ModerationDecision[] = ["PUBLISH", "REJECT", "NEEDS_CHANGES"]
 const postStatuses: ModerationPostStatus[] = ["PUBLISHED", "PENDING", "DRAFT", "ARCHIVED", "REJECTED", "NEEDS_CHANGES"]
 const participationTypes: ModerationReviewParticipation[] = ["AI_ONLY", "HUMAN"]
+const authorGroups: ModerationPostAuthorGroup[] = ["USERS", "SERVICE_TEAM"]
 const sorts = ["newest", "oldest", "queuedAt:desc", "queuedAt:asc", "decidedAt:desc", "decidedAt:asc"] as const
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
 
@@ -56,6 +57,8 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     REJECTED: t.rejectedStatus,
     AI_ONLY: t.aiOnlyReviews,
     HUMAN: t.humanParticipation,
+    USERS: t.userPosts,
+    SERVICE_TEAM: t.serviceTeamPosts,
     newest: t.descending,
     oldest: t.ascending,
     "queuedAt:desc": t.queuedNewest,
@@ -72,6 +75,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     decision: first(params.decision) as ModerationDecision | undefined,
     postStatus: first(params.postStatus) as ModerationPostStatus | undefined,
     participation: first(params.participation) as ModerationReviewParticipation | undefined,
+    authorGroup: first(params.authorGroup) as ModerationPostAuthorGroup | undefined,
     reviewerId: first(params.reviewerId), dateFrom: first(params.dateFrom),
     dateTo: first(params.dateTo),
     sort: sorts.includes(first(params.sort) as (typeof sorts)[number])
@@ -121,6 +125,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
           { name: "decision", value: query.decision, label: t.allDecisions, values: decisions },
           { name: "postStatus", value: query.postStatus, label: t.allPostStatuses, values: postStatuses },
           { name: "participation", value: query.participation, label: t.allParticipation, values: participationTypes },
+          { name: "authorGroup", value: query.authorGroup, label: t.allAuthorGroups, values: authorGroups },
           { name: "sort", value: query.sort, label: t.newest, values: sorts },
         ]}
       /></div>
