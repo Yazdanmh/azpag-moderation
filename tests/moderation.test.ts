@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import { hasModerationRole, isManagerOnly } from "../lib/moderation/types.ts"
 import { ApiResponseError, buildQueryString, formatAgreementRate, paginationTotal, paginationTotalPages, parseApiResponse } from "../lib/moderation/utils.ts"
+import { localizedModerationDefinition } from "../lib/moderation/definition-i18n.ts"
 
 test("moderation navigation authorization accepts only supported roles", () => {
   assert.equal(hasModerationRole(["MANAGER"]), true)
@@ -81,4 +82,12 @@ test("pagination helpers support current and legacy response names", () => {
   assert.equal(paginationTotal({ total_count: 21 }), 21)
   assert.equal(paginationTotalPages({ totalPages: 5 }), 5)
   assert.equal(paginationTotalPages({ total_pages: 3 }), 3)
+})
+
+test("contact-in-images moderation rule is localized across panel locales", () => {
+  const definition = { ruleId: "product_contact_in_images", field: "images" }
+  assert.equal(localizedModerationDefinition(definition, "en").rule, "Contact information in images")
+  assert.equal(localizedModerationDefinition(definition, "fa").rule, "اطلاعات تماس در تصاویر")
+  assert.equal(localizedModerationDefinition(definition, "ps").rule, "په انځورونو کې د اړیکې معلومات")
+  assert.equal(localizedModerationDefinition({ ...definition, ruleId: "Product Contact In Images" }, "fa").rule, "اطلاعات تماس در تصاویر")
 })

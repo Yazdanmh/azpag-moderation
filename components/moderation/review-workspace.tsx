@@ -57,14 +57,21 @@ function firstReviewItem(review: ModerationReview | null | undefined) {
 
 function visibleReviewFields(item: ModerationReviewItem): ModerationReviewField[] {
   const supported = new Set<ModerationReviewField>(["title", "description", "images", "fields", "categories", "price", "user_posts"])
+  const duplicateContext: ModerationReviewField[] = ["images", "title", "price", "description", "fields"]
   const scoped = Array.isArray(item.reviewScope?.fields)
     ? item.reviewScope.fields.filter((field): field is ModerationReviewField => supported.has(field))
     : []
   if (item.reviewScope?.includesImages && !scoped.includes("images")) scoped.push("images")
   if (item.reviewScope?.includesDynamicFields && !scoped.includes("fields")) scoped.push("fields")
   if (item.reviewScope?.requiresPreviousPostComparison && !scoped.includes("user_posts")) scoped.push("user_posts")
-  if (scoped.length) return scoped
-  if (supported.has(item.field as ModerationReviewField)) return [item.field as ModerationReviewField]
+  if (scoped.length) {
+    return scoped.includes("user_posts")
+      ? [...duplicateContext.filter((field) => !scoped.includes(field)), ...scoped]
+      : scoped
+  }
+  if (supported.has(item.field as ModerationReviewField)) {
+    return item.field === "user_posts" ? [...duplicateContext, "user_posts"] : [item.field as ModerationReviewField]
+  }
   return ["title", "description", "images", "fields"]
 }
 
@@ -149,6 +156,48 @@ function localizedCategory(
   return localizedApiText(category.translations, locale, category.name)
 }
 
+function mainOrFirstImage(images: ModerationPostSnapshot["images"] | undefined) {
+  if (!Array.isArray(images)) return undefined
+  return images.find((image) => image.isMain) ?? images[0]
+}
+
+function ComparisonPostCard({
+  post,
+  locale,
+  empty,
+}: {
+  post: Pick<ModerationPostSnapshot, "id" | "title" | "description" | "price" | "fields"> & {
+    images?: ModerationPostSnapshot["images"]
+  }
+  locale: "en" | "fa" | "ps"
+  empty: string
+}) {
+  const image = mainOrFirstImage(post.images)
+  const fields = post.fields && typeof post.fields === "object"
+    ? Object.entries(post.fields)
+        .map(([key, value]) => snapshotFieldDisplay(key, value, locale, empty))
+        .sort((a, b) => a.order - b.order)
+        .slice(0, 3)
+    : []
+  return <article className="overflow-hidden rounded-md border bg-background">
+    {image && <a href={image.url} target="_blank" rel="noreferrer" className="block aspect-video overflow-hidden bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image.url} alt={post.title} className="size-full object-cover transition-transform hover:scale-105" />
+    </a>}
+    <div className="p-3">
+      <p className="font-medium break-words">{post.title}</p>
+      {post.price?.value !== null && post.price?.value !== undefined && <p className="mt-1 text-sm font-semibold text-primary">{post.price.value.toLocaleString(locale)} {post.price.currency ?? ""}</p>}
+      {post.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{post.description}</p>}
+      {fields.length > 0 && <dl className="mt-3 divide-y border-y">
+        {fields.map((entry, index) => <div key={`${entry.label}-${index}`} className="grid grid-cols-2 gap-3 py-2 text-xs">
+          <dt className="text-muted-foreground">{entry.label}</dt>
+          <dd className="text-end font-medium break-words">{entry.value}</dd>
+        </div>)}
+      </dl>}
+    </div>
+  </article>
+}
+
 function ScopedReviewContent({
   post,
   item,
@@ -203,12 +252,8 @@ function ScopedReviewContent({
       if (field === "user_posts") {
         const posts = Array.isArray(post.userPosts) ? post.userPosts : []
         return <ReviewSection key={field} title={fieldLabel(field, locale)}>
-          {posts.length ? <div className="grid gap-3 sm:grid-cols-2">
-            {posts.map((previousPost) => <div key={previousPost.id} className="rounded-md border bg-background p-3">
-              <p className="font-medium">{previousPost.title}</p>
-              {previousPost.description && <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{previousPost.description}</p>}
-              {previousPost.price?.value !== null && previousPost.price?.value !== undefined && <p className="mt-2 text-sm font-medium">{previousPost.price.value.toLocaleString(locale)} {previousPost.price.currency ?? ""}</p>}
-            </div>)}
+          {posts.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {posts.map((previousPost) => <ComparisonPostCard key={previousPost.id} post={previousPost} locale={locale} empty={empty} />)}
           </div> : <p className="text-sm text-muted-foreground">{empty}</p>}
         </ReviewSection>
       }
@@ -355,7 +400,7 @@ export function ReviewWorkspace({ initial }: { initial: ApiResult<ModerationRevi
     : null
   const ruleDescription = localizedRuleDescription(currentItem?.ruleDescription, locale)
   const confirmCopy = confirmationCopy(locale)
-  const firstImage = Array.isArray(post.images) ? post.images[0] : undefined
+  const firstImage = mainOrFirstImage(post.images)
 
   return (
     <div className="grid w-full items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">

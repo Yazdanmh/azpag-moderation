@@ -12,6 +12,7 @@ const ruleLabels: Record<string, LocalizedLabel> = {
   product_unspecified_subject: { en: "Unspecified product or service", fa: "کالا یا خدمت نامشخص", ps: "نامعلوم توکی یا خدمت" },
   product_incorrect_category: { en: "Incorrect category", fa: "دسته‌بندی نادرست", ps: "ناسمه کټګوري" },
   product_contact_in_content: { en: "Contact information in content", fa: "اطلاعات تماس در محتوا", ps: "په منځپانګه کې د اړیکې معلومات" },
+  product_contact_in_images: { en: "Contact information in images", fa: "اطلاعات تماس در تصاویر", ps: "په انځورونو کې د اړیکې معلومات" },
   product_external_link: { en: "External link", fa: "لینک خارجی", ps: "بهرنۍ اړیکه" },
   product_invalid_price: { en: "Invalid or test price", fa: "قیمت نامعتبر یا آزمایشی", ps: "ناسمه یا ازمایښتي بیه" },
 }
@@ -35,7 +36,7 @@ export function localizedModerationDefinition(
   definition: { ruleId: string; field: string },
   locale: Locale,
 ) {
-  const ruleKey = definition.ruleId.trim().toLocaleLowerCase()
+  const ruleKey = definition.ruleId.trim().toLocaleLowerCase().replace(/[\s-]+/g, "_")
   const fieldKey = definition.field.trim().toLocaleLowerCase()
   const rule = ruleLabels[ruleKey]?.[locale] ?? fallback(definition.ruleId)
   const field = fieldLabels[fieldKey]?.[locale] ?? fallback(definition.field)

@@ -43,7 +43,7 @@ export interface ModerationPostSnapshot {
   source: string | null
   isSold: boolean | null
   isLDFB: boolean | null
-  images: Array<{ id?: string; url: string }>
+  images: Array<{ id?: string; url: string; isMain?: boolean }>
   categories: Array<{
     id: number
     name: string
@@ -71,7 +71,7 @@ export interface ModerationPostSnapshot {
     description: string | null
     price: { value: number | null; currency: string | null } | null
     fields: Record<string, unknown>
-    images?: Array<{ id?: string; url: string }>
+    images?: Array<{ id?: string; url: string; isMain?: boolean }>
   }>
 }
 
