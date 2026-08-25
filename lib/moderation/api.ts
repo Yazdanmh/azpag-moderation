@@ -8,7 +8,11 @@ import type {
   ModerationOperationalMetrics,
   ModerationQualityQuery,
   ModerationQueueMetrics,
-  QualityReportResponse,
+  QualityRulesResponse,
+  QualityDisagreementsResponse,
+  QualityRulesSortBy,
+  QualityDisagreementsSortBy,
+  SortOrder,
   QualityDisagreementDetail,
   ModerationPostHistory,
   ModerationReviewDetail,
@@ -59,17 +63,39 @@ export async function submitModerationEvaluation(
   )
 }
 
-export async function getModerationQualityReport(
+export async function getModerationQualityRules(
   accessToken: string,
-  query: ModerationQualityQuery = {},
+  query: { sortBy?: QualityRulesSortBy; sortOrder?: SortOrder } = {},
 ) {
-  const paginatedQuery = { ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 10 }
-  return parseApiResponse<QualityReportResponse>(
+  const response = await parseApiResponse<unknown>(
     await authenticatedApiFetch(
-      `/api/moderation/quality/report${buildQueryString(paginatedQuery)}`,
+      `/api/moderation/quality/rules${buildQueryString(query)}`,
       accessToken,
     ),
   )
+  return normalizeQualityRules(response)
+}
+
+export async function getModerationQualityDisagreements(
+  accessToken: string,
+  query: Pick<ModerationQualityQuery, "page" | "pageSize"> & {
+    sortBy?: QualityDisagreementsSortBy
+    sortOrder?: SortOrder
+  } = {},
+) {
+  const paginatedQuery = {
+    page: query.page ?? 1,
+    pageSize: query.pageSize ?? 20,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
+  }
+  const response = await parseApiResponse<unknown>(
+    await authenticatedApiFetch(
+      `/api/moderation/quality/disagreements${buildQueryString(paginatedQuery)}`,
+      accessToken,
+    ),
+  )
+  return normalizeQualityDisagreements(response, paginatedQuery.page, paginatedQuery.pageSize)
 }
 
 export async function getModerationQualityDisagreement(
@@ -128,4 +154,64 @@ export async function getModerationPostHistory(accessToken: string, postId: stri
       accessToken,
     ),
   )
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function normalizeQualityRules(value: unknown): QualityRulesResponse {
+  const root = record(value)
+  const rules = (Array.isArray(value) ? value : Array.isArray(root.rules) ? root.rules : Array.isArray(root.data) ? root.data : Array.isArray(root.byDefinition) ? root.byDefinition : []) as QualityRulesResponse["rules"]
+  const suppliedSummary = record(root.summary)
+  const total = numberValue(suppliedSummary.total, rules.reduce((sum, rule) => sum + (rule.total || 0), 0))
+  const agreements = numberValue(suppliedSummary.agreements, rules.reduce((sum, rule) => sum + (rule.agreements || 0), 0))
+  const disagreements = numberValue(suppliedSummary.disagreements, rules.reduce((sum, rule) => sum + (rule.disagreements || 0), 0))
+  const sampling = record(root.sampling)
+  return {
+    rules,
+    summary: {
+      total,
+      agreements,
+      disagreements,
+      agreementRate: typeof suppliedSummary.agreementRate === "number" ? suppliedSummary.agreementRate : total ? agreements / total : null,
+    },
+    sampling: {
+      confidentAiItems: numberValue(sampling.confidentAiItems),
+      sampledItems: numberValue(sampling.sampledItems),
+      reviewedSamples: numberValue(sampling.reviewedSamples, total),
+      sampledPercentage: nullableNumber(sampling.sampledPercentage),
+      reviewedSamplePercentage: nullableNumber(sampling.reviewedSamplePercentage),
+      configuredSampleRate: numberValue(sampling.configuredSampleRate),
+      confidenceThreshold: numberValue(sampling.confidenceThreshold),
+    },
+  }
+}
+
+function normalizeQualityDisagreements(value: unknown, page: number, pageSize: number): QualityDisagreementsResponse {
+  const root = record(value)
+  const data = (Array.isArray(value) ? value : Array.isArray(root.data) ? root.data : Array.isArray(root.disagreements) ? root.disagreements : []) as QualityDisagreementsResponse["data"]
+  const supplied = record(root.pagination ?? root.disagreementPagination)
+  const total = numberValue(supplied.total ?? supplied.total_count, data.length)
+  const currentPage = numberValue(supplied.page, page)
+  const totalPages = numberValue(supplied.totalPages ?? supplied.total_pages, Math.ceil(total / pageSize))
+  return {
+    data,
+    pagination: {
+      page: currentPage,
+      pageSize: numberValue(supplied.pageSize ?? supplied.page_size, pageSize),
+      total,
+      totalPages,
+      hasNextPage: typeof supplied.hasNextPage === "boolean" ? supplied.hasNextPage : currentPage < totalPages,
+      hasPreviousPage: typeof supplied.hasPreviousPage === "boolean" ? supplied.hasPreviousPage : currentPage > 1,
+    },
+  }
+}
+
+function numberValue(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null
 }

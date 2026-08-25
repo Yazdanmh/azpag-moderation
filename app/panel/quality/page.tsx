@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation"
 import { QualityReport } from "@/components/moderation/quality-report"
-import { getModerationQualityReport, ModerationApiError } from "@/lib/moderation/api"
-import { hasModerationRole, isManagerOnly, type ApiResult, type QualityReportResponse } from "@/lib/moderation/types"
+import { getModerationQualityDisagreements, getModerationQualityRules, ModerationApiError } from "@/lib/moderation/api"
+import { hasModerationRole, isManagerOnly, type ApiResult, type QualityDisagreementsSortBy, type QualityReportResponse, type QualityRulesSortBy, type SortOrder } from "@/lib/moderation/types"
 import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale } from "@/lib/i18n"
 import { moderationDictionaries } from "@/lib/moderation/i18n"
-import { DateRangeDialog } from "@/components/moderation/date-range-dialog"
 
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
+const ruleSorts = new Set<QualityRulesSortBy>(["ruleId", "field", "total", "agreements", "disagreements", "agreementRate"])
+const disagreementSorts = new Set<QualityDisagreementsSortBy>(["completedAt", "ruleId", "field", "postRevision"])
 
 export default async function QualityPage({
   searchParams,
@@ -22,25 +23,33 @@ export default async function QualityPage({
   const localeValue = (await cookies()).get("azpag_locale")?.value
   const t = moderationDictionaries[isLocale(localeValue) ? localeValue : "fa"]
   const params = await searchParams
-  const dateFrom = first(params.dateFrom)
-  const dateTo = first(params.dateTo)
   const page = Math.max(1, Number(first(params.page)) || 1)
-  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 10))
-  const query = {
-    dateFrom: toApiDate(dateFrom, false),
-    dateTo: toApiDate(dateTo, true),
-    page,
-    pageSize,
-  }
-
+  const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 20))
+  const rulesSortBy = validSort(first(params.rulesSortBy), ruleSorts, "disagreements")
+  const rulesSortOrder = validOrder(first(params.rulesSortOrder), "desc")
+  const disagreementsSortBy = validSort(first(params.disagreementsSortBy), disagreementSorts, "completedAt")
+  const disagreementsSortOrder = validOrder(first(params.disagreementsSortOrder), "desc")
   let initial: ApiResult<QualityReportResponse>
   try {
-    initial = { ok: true, data: await getModerationQualityReport(session.accessToken, query) }
+    const [rules, disagreements] = await Promise.all([
+      getModerationQualityRules(session.accessToken, { sortBy: rulesSortBy, sortOrder: rulesSortOrder }),
+      getModerationQualityDisagreements(session.accessToken, { page, pageSize, sortBy: disagreementsSortBy, sortOrder: disagreementsSortOrder }),
+    ])
+    initial = { ok: true, data: {
+      range: { dateFrom: null, dateTo: null, field: "sourceReview.decidedAt" },
+      sampling: rules.sampling,
+      summary: rules.summary,
+      byDefinition: rules.rules,
+      disagreements: disagreements.data,
+      disagreementPagination: disagreements.pagination,
+    } }
   } catch (error) {
     if (error instanceof ModerationApiError && error.status === 401) {
       const returnParams = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (dateFrom) returnParams.set("dateFrom", dateFrom)
-      if (dateTo) returnParams.set("dateTo", dateTo)
+      returnParams.set("rulesSortBy", rulesSortBy)
+      returnParams.set("rulesSortOrder", rulesSortOrder)
+      returnParams.set("disagreementsSortBy", disagreementsSortBy)
+      returnParams.set("disagreementsSortOrder", disagreementsSortOrder)
       redirect(`/auth/refresh?returnTo=${encodeURIComponent(`/panel/quality?${returnParams}`)}`)
     }
     initial = error instanceof ModerationApiError
@@ -50,35 +59,19 @@ export default async function QualityPage({
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t.qualityTitle}</h1>
-          <p className="text-muted-foreground">{t.qualitySubtitle}</p>
-        </div>
-        <DateRangeDialog
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          clearHref="/panel/quality"
-          hiddenFields={{ pageSize }}
-          labels={{
-            trigger: t.dateRange,
-            title: t.dateRange,
-            description: t.dateRangeDescription,
-            from: t.dateFrom,
-            to: t.dateTo,
-            apply: t.applyRange,
-            clear: t.clearRange,
-          }}
-        />
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.qualityTitle}</h1>
+        <p className="text-muted-foreground">{t.qualitySubtitle}</p>
       </div>
-      <QualityReport initial={initial} dateFrom={dateFrom} dateTo={dateTo} pageSize={pageSize} />
+      <QualityReport initial={initial} pageSize={pageSize} rulesSortBy={rulesSortBy} rulesSortOrder={rulesSortOrder} disagreementsSortBy={disagreementsSortBy} disagreementsSortOrder={disagreementsSortOrder} />
     </main>
   )
 }
 
-function toApiDate(value: string | undefined, endOfDay: boolean) {
-  if (!value) return undefined
-  return /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? `${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`
-    : value
+function validSort<T extends string>(value: string | undefined, supported: Set<T>, fallback: T): T {
+  return value && supported.has(value as T) ? value as T : fallback
+}
+
+function validOrder(value: string | undefined, fallback: SortOrder): SortOrder {
+  return value === "asc" || value === "desc" ? value : fallback
 }

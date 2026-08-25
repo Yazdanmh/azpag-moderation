@@ -40,6 +40,7 @@ export function ReviewToolbar({
   reviewerId,
   dateFrom,
   dateTo,
+  hiddenFields,
 }: {
   query?: string
   pageSize: number
@@ -49,6 +50,7 @@ export function ReviewToolbar({
   reviewerId?: string
   dateFrom?: string
   dateTo?: string
+  hiddenFields?: Record<string, string | undefined>
 }) {
   const router = useRouter()
   const [refreshing, startTransition] = React.useTransition()
@@ -72,6 +74,7 @@ export function ReviewToolbar({
         {reviewerId && <input type="hidden" name="reviewerId" value={reviewerId} />}
         {dateFrom && <input type="hidden" name="dateFrom" value={dateFrom} />}
         {dateTo && <input type="hidden" name="dateTo" value={dateTo} />}
+        {Object.entries(hiddenFields ?? {}).map(([name, value]) => value && <input key={name} type="hidden" name={name} value={value} />)}
         <Button type="submit" size="sm" className="absolute end-1 top-1/2 h-9 -translate-y-1/2 px-3">
           {labels.search}
         </Button>
@@ -115,6 +118,7 @@ export function ReviewToolbar({
             <form className="grid gap-4 sm:grid-cols-2">
               <input type="hidden" name="query" value={query ?? ""} />
               <input type="hidden" name="pageSize" value={pageSize} />
+              {Object.entries(hiddenFields ?? {}).map(([name, value]) => value && <input key={name} type="hidden" name={name} value={value} />)}
               {filters.map((filter) => (
                 <div key={filter.name} className="flex flex-col gap-2">
                   <label className="text-sm font-medium">{filter.label}</label>

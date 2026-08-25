@@ -77,6 +77,13 @@ test("review list query preserves a backend-supported sort", () => {
   )
 })
 
+test("review list query sends column sorting alongside the legacy sort", () => {
+  assert.equal(
+    buildQueryString({ page: 1, pageSize: 20, sort: "newest", sortBy: "humanCompletedAt", sortOrder: "asc" }),
+    "?page=1&pageSize=20&sort=newest&sortBy=humanCompletedAt&sortOrder=asc",
+  )
+})
+
 test("pagination helpers support current and legacy response names", () => {
   assert.equal(paginationTotal({ total: 42 }), 42)
   assert.equal(paginationTotal({ total_count: 21 }), 21)

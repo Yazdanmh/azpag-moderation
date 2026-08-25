@@ -2,7 +2,6 @@
 
 import {
   acknowledgeModerationReviewShown,
-  getModerationQualityReport,
   getNextModerationReview,
   ModerationApiError,
   submitModerationEvaluation,
@@ -13,7 +12,6 @@ import {
   type HumanReviewOutcome,
   type ModerationReview,
   type ModerationReviewShownAcknowledgement,
-  type QualityReportResponse,
   type SubmitHumanEvaluationResponse,
 } from "@/lib/moderation/types"
 import { deleteSession, getSession, replaceSession } from "@/lib/auth/session"
@@ -95,8 +93,4 @@ export async function submitEvaluation(input: {
       reason: parsed.data.reason,
     }),
   )
-}
-
-export async function loadQualityReport(): Promise<ApiResult<QualityReportResponse>> {
-  return run(getModerationQualityReport)
 }

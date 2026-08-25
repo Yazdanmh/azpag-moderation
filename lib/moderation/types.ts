@@ -214,6 +214,22 @@ export interface QualityReportResponse {
   disagreementPagination: Pagination
 }
 
+export interface QualityRulesResponse {
+  sampling: QualityReportResponse["sampling"]
+  summary: QualitySummary
+  rules: QualityDefinitionMetric[]
+}
+
+export interface QualityDisagreementsResponse {
+  data: QualityDisagreement[]
+  pagination: Pagination
+}
+
+export type QualityRulesSortBy = "ruleId" | "field" | "total" | "agreements" | "disagreements" | "agreementRate"
+export type QualityDisagreementsSortBy = "completedAt" | "ruleId" | "field" | "postRevision"
+export type SortOrder = "asc" | "desc"
+export type ModerationReviewsSortBy = "queuedAt" | "aiStartedAt" | "aiCompletedAt" | "humanQueuedAt" | "humanShownAt" | "humanCompletedAt" | "decidedAt" | "status" | "finalDecision" | "attemptCount" | "postRevision"
+
 export interface Pagination {
   page: number
   pageSize: number
@@ -575,6 +591,8 @@ export interface ModerationReviewsQuery {
   dateFrom?: string
   dateTo?: string
   sort?: "newest" | "oldest" | "queuedAt:desc" | "queuedAt:asc" | "decidedAt:desc" | "decidedAt:asc"
+  sortBy?: ModerationReviewsSortBy
+  sortOrder?: SortOrder
 }
 
 export type ApiResult<T> =

@@ -3,12 +3,12 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BadgeCheckIcon, BotIcon, CheckCheckIcon, CircleGaugeIcon, ExternalLinkIcon, FlaskConicalIcon, PercentIcon, Settings2Icon, TestTube2Icon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, BadgeCheckIcon, BotIcon, CheckCheckIcon, CircleGaugeIcon, ExternalLinkIcon, FlaskConicalIcon, PercentIcon, Settings2Icon, TestTube2Icon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react"
 import { useI18n } from "@/components/providers/app-providers"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { ApiResult, EvaluationOutcome, QualityReportResponse } from "@/lib/moderation/types"
+import type { ApiResult, EvaluationOutcome, QualityDisagreementsSortBy, QualityReportResponse, QualityRulesSortBy, SortOrder } from "@/lib/moderation/types"
 import { formatAgreementRate } from "@/lib/moderation/utils"
 import { moderationDictionaries } from "@/lib/moderation/i18n"
 import { localizedModerationDefinition } from "@/lib/moderation/definition-i18n"
@@ -30,7 +30,21 @@ function OutcomeBadge({ value, owner, noData, labels }: { value: EvaluationOutco
   )
 }
 
-export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial: ApiResult<QualityReportResponse>; dateFrom?: string; dateTo?: string; pageSize: number }) {
+export function QualityReport({
+  initial,
+  pageSize,
+  rulesSortBy,
+  rulesSortOrder,
+  disagreementsSortBy,
+  disagreementsSortOrder,
+}: {
+  initial: ApiResult<QualityReportResponse>
+  pageSize: number
+  rulesSortBy: QualityRulesSortBy
+  rulesSortOrder: SortOrder
+  disagreementsSortBy: QualityDisagreementsSortBy
+  disagreementsSortOrder: SortOrder
+}) {
   const { locale } = useI18n()
   const t = moderationDictionaries[locale]
   const router = useRouter()
@@ -69,10 +83,24 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
     { label: t.agreementRate, value: summary.agreementRate === null ? t.noData : formatAgreementRate(summary.agreementRate), icon: CheckCheckIcon },
   ]
   const pageHref = (page: number) => {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-    if (dateFrom) params.set("dateFrom", dateFrom)
-    if (dateTo) params.set("dateTo", dateTo)
+    const params = qualityParams(page)
     return `/panel/quality?${params.toString()}`
+  }
+  function qualityParams(page: number) {
+    return new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      rulesSortBy,
+      rulesSortOrder,
+      disagreementsSortBy,
+      disagreementsSortOrder,
+    })
+  }
+  function changeSort(kind: "rules" | "disagreements", sortBy: string, sortOrder: SortOrder) {
+    const params = qualityParams(kind === "disagreements" ? 1 : disagreementPagination.page)
+    params.set(`${kind}SortBy`, sortBy)
+    params.set(`${kind}SortOrder`, sortOrder)
+    startTransition(() => router.push(`/panel/quality?${params.toString()}`))
   }
 
   return (
@@ -97,7 +125,15 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
         <CardContent>
           {definitions.length ? (
             <Table>
-              <TableHeader><TableRow><TableHead>{t.definition}</TableHead><TableHead>{t.rule}</TableHead><TableHead>{t.field}</TableHead><TableHead>{t.total}</TableHead><TableHead>{t.agreements}</TableHead><TableHead>{t.disagreements}</TableHead><TableHead>{t.rate}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>{t.definition}</TableHead>
+                <SortableHead label={t.rule} field="ruleId" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+                <SortableHead label={t.field} field="field" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+                <SortableHead label={t.total} field="total" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+                <SortableHead label={t.agreements} field="agreements" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+                <SortableHead label={t.disagreements} field="disagreements" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+                <SortableHead label={t.rate} field="agreementRate" activeField={rulesSortBy} activeOrder={rulesSortOrder} disabled={pending} onSort={(field, order) => changeSort("rules", field, order)} />
+              </TableRow></TableHeader>
               <TableBody>{definitions.map((metric) => {
                 const localized = localizedModerationDefinition(metric, locale)
                 return (
@@ -117,13 +153,23 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
         <CardContent>
           {recent.length ? (
             <Table>
-              <TableHeader><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.definition} / {t.field}</TableHead><TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead><TableHead>{t.completed}</TableHead><TableHead><span className="sr-only">Details</span></TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>{t.post}</TableHead>
+                <SortableHead label={t.revision} field="postRevision" activeField={disagreementsSortBy} activeOrder={disagreementsSortOrder} disabled={pending} onSort={(field, order) => changeSort("disagreements", field, order)} />
+                <SortableHead label={t.rule} field="ruleId" activeField={disagreementsSortBy} activeOrder={disagreementsSortOrder} disabled={pending} onSort={(field, order) => changeSort("disagreements", field, order)} />
+                <SortableHead label={t.field} field="field" activeField={disagreementsSortBy} activeOrder={disagreementsSortOrder} disabled={pending} onSort={(field, order) => changeSort("disagreements", field, order)} />
+                <TableHead>{t.ai}</TableHead><TableHead>{t.confidence}</TableHead><TableHead>{t.model}</TableHead><TableHead>{t.human}</TableHead><TableHead>{t.humanReason}</TableHead>
+                <SortableHead label={t.completed} field="completedAt" activeField={disagreementsSortBy} activeOrder={disagreementsSortOrder} disabled={pending} onSort={(field, order) => changeSort("disagreements", field, order)} />
+                <TableHead><span className="sr-only">Details</span></TableHead>
+              </TableRow></TableHeader>
               <TableBody>{recent.map((row) => {
                 const localized = localizedModerationDefinition(row, locale)
                 return (
                 <TableRow key={row.reviewItemId} className="bg-destructive/[0.025]">
-                  <TableCell><div>{row.postId}</div><div className="text-xs text-muted-foreground">{t.revision} {row.postRevision}</div></TableCell>
-                  <TableCell><div>{localized.definition}</div><div className="font-mono text-xs text-muted-foreground">{row.definitionId}</div></TableCell>
+                  <TableCell>{row.postId}</TableCell>
+                  <TableCell>{row.postRevision}</TableCell>
+                  <TableCell><div>{localized.rule}</div><div className="font-mono text-xs text-muted-foreground">{row.ruleId}</div></TableCell>
+                  <TableCell>{localized.field}</TableCell>
                   <TableCell><OutcomeBadge value={row.ai?.outcome ?? null} owner={t.ai} noData={t.noData} labels={outcomeLabels} /></TableCell>
                   <TableCell>{row.ai ? row.ai.confidence.toLocaleString(locale) : t.noData}</TableCell>
                   <TableCell><div>{row.ai?.model ?? t.noData}</div><div className="text-xs text-muted-foreground">{row.ai?.promptVersion ?? t.noPromptVersion}</div>{row.ai && (row.ai.reason || row.ai.reasonTranslations) && <div className="mt-1 max-w-72 whitespace-normal text-xs text-muted-foreground">{localizedQualityReason(row.ai.reason, row.ai.reasonTranslations, locale) || t.noData}</div>}</TableCell>
@@ -140,6 +186,21 @@ export function QualityReport({ initial, dateFrom, dateTo, pageSize }: { initial
       </Card>
     </div>
   )
+}
+
+function SortableHead({ label, field, activeField, activeOrder, disabled, onSort }: {
+  label: string
+  field: string
+  activeField: string
+  activeOrder: SortOrder
+  disabled: boolean
+  onSort: (field: string, order: SortOrder) => void
+}) {
+  const active = activeField === field
+  return <TableHead><div className="flex items-center gap-1.5 whitespace-nowrap"><span>{label}</span><span className="inline-flex items-center">
+    <button type="button" title={`${label} ascending`} aria-label={`${label} ascending`} aria-pressed={active && activeOrder === "asc"} disabled={disabled} onClick={() => onSort(field, "asc")} className={cn("rounded p-0.5 hover:bg-muted disabled:pointer-events-none disabled:opacity-50", active && activeOrder === "asc" && "bg-primary/10 text-primary")}><ArrowUpIcon className="size-3.5" /></button>
+    <button type="button" title={`${label} descending`} aria-label={`${label} descending`} aria-pressed={active && activeOrder === "desc"} disabled={disabled} onClick={() => onSort(field, "desc")} className={cn("rounded p-0.5 hover:bg-muted disabled:pointer-events-none disabled:opacity-50", active && activeOrder === "desc" && "bg-primary/10 text-primary")}><ArrowDownIcon className="size-3.5" /></button>
+  </span></div></TableHead>
 }
 
 function localizedQualityReason(

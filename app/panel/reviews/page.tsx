@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { BotIcon, Clock3Icon, ImageIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, BotIcon, Clock3Icon, ImageIcon } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -9,7 +9,7 @@ import { ReviewToolbar } from "@/components/moderation/review-toolbar"
 import { ResultState } from "@/components/moderation/shared"
 import { StatusBadge, personName } from "@/components/moderation/review-badges"
 import { getModerationReviews, ModerationApiError } from "@/lib/moderation/api"
-import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostAuthorGroup, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewParticipation, type ModerationReviewsQuery, type ModerationReviewStatus, type ModerationReviewType } from "@/lib/moderation/types"
+import { hasModerationRole, isManagerOnly, type ModerationDecision, type ModerationPerson, type ModerationPostAuthorGroup, type ModerationPostStatus, type ModerationReviewListItem, type ModerationReviewParticipation, type ModerationReviewsQuery, type ModerationReviewsSortBy, type ModerationReviewStatus, type ModerationReviewType, type SortOrder } from "@/lib/moderation/types"
 import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
 import { isLocale, type Locale } from "@/lib/i18n"
@@ -26,6 +26,7 @@ const postStatuses: ModerationPostStatus[] = ["PUBLISHED", "PENDING", "DRAFT", "
 const participationTypes: ModerationReviewParticipation[] = ["AI_ONLY", "HUMAN"]
 const authorGroups: ModerationPostAuthorGroup[] = ["USERS", "SERVICE_TEAM"]
 const sorts = ["newest", "oldest", "queuedAt:desc", "queuedAt:asc", "decidedAt:desc", "decidedAt:asc"] as const
+const sortableFields = new Set<ModerationReviewsSortBy>(["queuedAt", "aiStartedAt", "aiCompletedAt", "humanQueuedAt", "humanShownAt", "humanCompletedAt", "decidedAt", "status", "finalDecision", "attemptCount", "postRevision"])
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value
 
 export default async function ReviewsListPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -68,6 +69,10 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
   }
   const page = Math.max(1, Number(first(params.page)) || 1)
   const pageSize = Math.min(100, Math.max(1, Number(first(params.pageSize)) || 10))
+  const requestedSortBy = first(params.sortBy)
+  const sortBy = requestedSortBy && sortableFields.has(requestedSortBy as ModerationReviewsSortBy) ? requestedSortBy as ModerationReviewsSortBy : undefined
+  const requestedSortOrder = first(params.sortOrder)
+  const sortOrder = requestedSortOrder === "asc" || requestedSortOrder === "desc" ? requestedSortOrder : sortBy ? "desc" : undefined
   const query: ModerationReviewsQuery = {
     page, pageSize, query: first(params.query),
     status: first(params.status) as ModerationReviewStatus | undefined,
@@ -81,6 +86,8 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     sort: sorts.includes(first(params.sort) as (typeof sorts)[number])
       ? first(params.sort) as (typeof sorts)[number]
       : "newest",
+    sortBy,
+    sortOrder,
   }
   let response
   try {
@@ -106,6 +113,14 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
     next.set("page", String(target))
     return `/panel/reviews?${next.toString()}`
   }
+  const sortHref = (field: ModerationReviewsSortBy, order: SortOrder) => {
+    const next = new URLSearchParams()
+    Object.entries(query).forEach(([key, value]) => { if (value !== undefined && value !== "") next.set(key, String(value)) })
+    next.set("sortBy", field)
+    next.set("sortOrder", order)
+    next.set("page", "1")
+    return `/panel/reviews?${next.toString()}`
+  }
   const localizedValue = (value: string | null | undefined) =>
     value ? optionLabels[value] ?? value.replaceAll("_", " ") : undefined
   return (
@@ -117,6 +132,7 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
         reviewerId={query.reviewerId}
         dateFrom={query.dateFrom}
         dateTo={query.dateTo}
+        hiddenFields={{ sortBy: query.sortBy, sortOrder: query.sortOrder }}
         optionLabels={optionLabels}
         labels={t}
         filters={[
@@ -126,13 +142,19 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
           { name: "postStatus", value: query.postStatus, label: t.allPostStatuses, values: postStatuses },
           { name: "participation", value: query.participation, label: t.allParticipation, values: participationTypes },
           { name: "authorGroup", value: query.authorGroup, label: t.allAuthorGroups, values: authorGroups },
-          { name: "sort", value: query.sort, label: t.newest, values: sorts },
         ]}
       /></div>
       {!rows.length ? (
         <ResultState title={t.noMatches} description={t.filtersDescription} actionHref="/panel/reviews" retryLabel={t.clear} fill />
       ) : <div className="flex min-w-0 flex-col gap-4">
-      <Card className="min-w-0 max-w-full overflow-hidden"><CardContent className="min-w-0 overflow-hidden">{rows.length ? <Table><TableHeader className="sticky top-0 z-10 bg-card"><TableRow><TableHead>{t.post}</TableHead><TableHead>{t.review}</TableHead><TableHead>{t.status}</TableHead><TableHead>{t.decision}</TableHead><TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead><TableHead>{t.queued}</TableHead></TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
+      <Card className="min-w-0 max-w-full overflow-hidden"><CardContent className="min-w-0 overflow-hidden">{rows.length ? <Table><TableHeader className="sticky top-0 z-10 bg-card"><TableRow>
+        <TableHead>{t.post}</TableHead>
+        <TableHead>{t.review}</TableHead>
+        <SortableHead label={t.status} field="status" activeField={query.sortBy} activeOrder={query.sortOrder} href={sortHref} />
+        <SortableHead label={t.decision} field="finalDecision" activeField={query.sortBy} activeOrder={query.sortOrder} href={sortHref} />
+        <TableHead>{t.reviewer}</TableHead><TableHead>{t.summary}</TableHead>
+        <SortableHead label={t.queued} field="queuedAt" activeField={query.sortBy} activeOrder={query.sortOrder} href={sortHref} />
+      </TableRow></TableHeader><TableBody>{rows.map((review) => <TableRow key={review.id}>
         <TableCell className="min-w-80 whitespace-normal"><PostSummary review={review} locale={locale} labels={t} /></TableCell>
         <TableCell><Link className="text-primary hover:underline" href={`/panel/reviews/${review.id}`}>{localizedValue(review.type)}</Link></TableCell><TableCell><StatusBadge value={review.status} label={localizedValue(review.status)} /></TableCell><TableCell><StatusBadge value={review.finalDecision} label={localizedValue(review.finalDecision)} /></TableCell>
         <TableCell className="whitespace-normal"><Reviewer reviewer={review.assignment?.reviewer} aiLabel={t.reviewedByAi} /></TableCell><TableCell className="min-w-56 whitespace-normal"><ItemSummary summary={review.itemSummary} locale={locale} labels={t} /></TableCell><TableCell className="min-w-44 whitespace-normal"><QueuedAt value={review.queuedAt} locale={locale} /></TableCell>
@@ -141,6 +163,20 @@ export default async function ReviewsListPage({ searchParams }: { searchParams: 
       </div>}
     </main>
   )
+}
+
+function SortableHead({ label, field, activeField, activeOrder, href }: {
+  label: string
+  field: ModerationReviewsSortBy
+  activeField?: ModerationReviewsSortBy
+  activeOrder?: SortOrder
+  href: (field: ModerationReviewsSortBy, order: SortOrder) => string
+}) {
+  const active = activeField === field
+  return <TableHead><div className="flex items-center gap-1.5 whitespace-nowrap"><span>{label}</span><span className="inline-flex items-center">
+    <Link title={`${label} ascending`} aria-label={`${label} ascending`} aria-current={active && activeOrder === "asc" ? "true" : undefined} href={href(field, "asc")} className={cn("rounded p-0.5 hover:bg-muted", active && activeOrder === "asc" && "bg-primary/10 text-primary")}><ArrowUpIcon className="size-3.5" /></Link>
+    <Link title={`${label} descending`} aria-label={`${label} descending`} aria-current={active && activeOrder === "desc" ? "true" : undefined} href={href(field, "desc")} className={cn("rounded p-0.5 hover:bg-muted", active && activeOrder === "desc" && "bg-primary/10 text-primary")}><ArrowDownIcon className="size-3.5" /></Link>
+  </span></div></TableHead>
 }
 
 function postImageUrl(image: ModerationReviewListItem["post"]["images"][number]) {
