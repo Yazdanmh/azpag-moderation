@@ -9,6 +9,7 @@ import type {
   ModerationQualityQuery,
   ModerationQueueMetrics,
   QualityRulesResponse,
+  QualitySummaryResponse,
   QualityDisagreementsResponse,
   QualityRulesSortBy,
   QualityDisagreementsSortBy,
@@ -74,6 +75,13 @@ export async function getModerationQualityRules(
     ),
   )
   return normalizeQualityRules(response)
+}
+
+export async function getModerationQualitySummary(accessToken: string) {
+  const response = await parseApiResponse<unknown>(
+    await authenticatedApiFetch("/api/moderation/quality/summary", accessToken),
+  )
+  return normalizeQualitySummary(response)
 }
 
 export async function getModerationQualityDisagreements(
@@ -163,28 +171,22 @@ function record(value: unknown): Record<string, unknown> {
 function normalizeQualityRules(value: unknown): QualityRulesResponse {
   const root = record(value)
   const rules = (Array.isArray(value) ? value : Array.isArray(root.rules) ? root.rules : Array.isArray(root.data) ? root.data : Array.isArray(root.byDefinition) ? root.byDefinition : []) as QualityRulesResponse["rules"]
-  const suppliedSummary = record(root.summary)
-  const total = numberValue(suppliedSummary.total, rules.reduce((sum, rule) => sum + (rule.total || 0), 0))
-  const agreements = numberValue(suppliedSummary.agreements, rules.reduce((sum, rule) => sum + (rule.agreements || 0), 0))
-  const disagreements = numberValue(suppliedSummary.disagreements, rules.reduce((sum, rule) => sum + (rule.disagreements || 0), 0))
-  const sampling = record(root.sampling)
+  return { rules }
+}
+
+function normalizeQualitySummary(value: unknown): QualitySummaryResponse {
+  const summary = record(value)
   return {
-    rules,
-    summary: {
-      total,
-      agreements,
-      disagreements,
-      agreementRate: typeof suppliedSummary.agreementRate === "number" ? suppliedSummary.agreementRate : total ? agreements / total : null,
-    },
-    sampling: {
-      confidentAiItems: numberValue(sampling.confidentAiItems),
-      sampledItems: numberValue(sampling.sampledItems),
-      reviewedSamples: numberValue(sampling.reviewedSamples, total),
-      sampledPercentage: nullableNumber(sampling.sampledPercentage),
-      reviewedSamplePercentage: nullableNumber(sampling.reviewedSamplePercentage),
-      configuredSampleRate: numberValue(sampling.configuredSampleRate),
-      confidenceThreshold: numberValue(sampling.confidenceThreshold),
-    },
+    confidentAiItems: numberValue(summary.confidentAiItems),
+    sampledItems: numberValue(summary.sampledItems),
+    reviewedSamples: numberValue(summary.reviewedSamples),
+    samplingCoverage: numberValue(summary.samplingCoverage),
+    reviewedCoverage: numberValue(summary.reviewedCoverage),
+    configuredSamplingRate: numberValue(summary.configuredSamplingRate),
+    aiConfidenceThreshold: numberValue(summary.aiConfidenceThreshold),
+    agreements: numberValue(summary.agreements),
+    disagreements: numberValue(summary.disagreements),
+    agreementRate: numberValue(summary.agreementRate),
   }
 }
 
@@ -210,8 +212,4 @@ function normalizeQualityDisagreements(value: unknown, page: number, pageSize: n
 
 function numberValue(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback
-}
-
-function nullableNumber(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null
 }

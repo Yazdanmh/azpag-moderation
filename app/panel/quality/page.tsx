@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { QualityReport } from "@/components/moderation/quality-report"
-import { getModerationQualityDisagreements, getModerationQualityRules, ModerationApiError } from "@/lib/moderation/api"
+import { getModerationQualityDisagreements, getModerationQualityRules, getModerationQualitySummary, ModerationApiError } from "@/lib/moderation/api"
 import { hasModerationRole, isManagerOnly, type ApiResult, type QualityDisagreementsSortBy, type QualityReportResponse, type QualityRulesSortBy, type SortOrder } from "@/lib/moderation/types"
 import { getSession } from "@/lib/auth/session"
 import { cookies } from "next/headers"
@@ -31,14 +31,28 @@ export default async function QualityPage({
   const disagreementsSortOrder = validOrder(first(params.disagreementsSortOrder), "desc")
   let initial: ApiResult<QualityReportResponse>
   try {
-    const [rules, disagreements] = await Promise.all([
+    const [summary, rules, disagreements] = await Promise.all([
+      getModerationQualitySummary(session.accessToken),
       getModerationQualityRules(session.accessToken, { sortBy: rulesSortBy, sortOrder: rulesSortOrder }),
       getModerationQualityDisagreements(session.accessToken, { page, pageSize, sortBy: disagreementsSortBy, sortOrder: disagreementsSortOrder }),
     ])
     initial = { ok: true, data: {
       range: { dateFrom: null, dateTo: null, field: "sourceReview.decidedAt" },
-      sampling: rules.sampling,
-      summary: rules.summary,
+      sampling: {
+        confidentAiItems: summary.confidentAiItems,
+        sampledItems: summary.sampledItems,
+        reviewedSamples: summary.reviewedSamples,
+        sampledPercentage: summary.samplingCoverage,
+        reviewedSamplePercentage: summary.reviewedCoverage,
+        configuredSampleRate: summary.configuredSamplingRate,
+        confidenceThreshold: summary.aiConfidenceThreshold,
+      },
+      summary: {
+        total: summary.reviewedSamples,
+        agreements: summary.agreements,
+        disagreements: summary.disagreements,
+        agreementRate: summary.agreementRate,
+      },
       byDefinition: rules.rules,
       disagreements: disagreements.data,
       disagreementPagination: disagreements.pagination,

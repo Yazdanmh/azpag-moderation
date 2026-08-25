@@ -215,9 +215,20 @@ export interface QualityReportResponse {
 }
 
 export interface QualityRulesResponse {
-  sampling: QualityReportResponse["sampling"]
-  summary: QualitySummary
   rules: QualityDefinitionMetric[]
+}
+
+export interface QualitySummaryResponse {
+  confidentAiItems: number
+  sampledItems: number
+  reviewedSamples: number
+  samplingCoverage: number
+  reviewedCoverage: number
+  configuredSamplingRate: number
+  aiConfidenceThreshold: number
+  agreements: number
+  disagreements: number
+  agreementRate: number
 }
 
 export interface QualityDisagreementsResponse {
